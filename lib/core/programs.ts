@@ -1,4 +1,6 @@
 // lib/core/programs.ts
+// Program management system implementation
+// Issue #2
 
 import type { Program, ProgramType, Team } from "@/lib/types"
 import { makeId } from "./id"
