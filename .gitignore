@@ -39,3 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Ignore any file or directory containing 'claude' (case-insensitive)
+*[Cc][Ll][Aa][Uu][Dd][Ee]*
