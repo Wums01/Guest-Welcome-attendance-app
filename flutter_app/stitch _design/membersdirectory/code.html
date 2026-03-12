@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Guest Welcome - Members Directory</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#0f49bd",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#101622",
+                    },
+                    fontFamily: {
+                        "display": ["Plus Jakarta Sans"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .active-icon {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen flex flex-col">
+<header class="sticky top-0 z-10 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
+<div class="px-4 pt-6 pb-2 flex items-center justify-between">
+<button class="p-2 -ml-2 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-full transition-colors">
+<span class="material-symbols-outlined text-slate-600 dark:text-slate-400">menu</span>
+</button>
+<h1 class="text-xl font-bold tracking-tight">Members</h1>
+<button class="p-2 -mr-2 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-full transition-colors relative">
+<span class="material-symbols-outlined text-slate-600 dark:text-slate-400">notifications</span>
+<span class="absolute top-2 right-2 flex h-2 w-2 rounded-full bg-primary"></span>
+</button>
+</div>
+<div class="px-4 pb-4 mt-2">
+<div class="flex gap-2">
+<div class="relative flex-1">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">search</span>
+<input class="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-xl pl-10 pr-4 py-2.5 focus:ring-2 focus:ring-primary/50 placeholder:text-slate-500" placeholder="Search members..." type="text"/>
+</div>
+<button class="bg-slate-100 dark:bg-slate-800 p-2.5 rounded-xl flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+<span class="material-symbols-outlined text-slate-600 dark:text-slate-400">tune</span>
+</button>
+</div>
+</div>
+</header>
+<main class="flex-1 overflow-y-auto px-4 py-4">
+<div class="flex gap-2 mb-6 overflow-x-auto pb-2 scrollbar-hide">
+<button class="px-4 py-1.5 rounded-full bg-primary text-white text-sm font-semibold">All</button>
+<button class="px-4 py-1.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-sm font-semibold border border-transparent hover:border-slate-200">Team A</button>
+<button class="px-4 py-1.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-sm font-semibold border border-transparent hover:border-slate-200">Team B</button>
+<button class="px-4 py-1.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-sm font-semibold border border-transparent hover:border-slate-200">Team C</button>
+</div>
+<div class="space-y-3">
+<div class="flex items-center gap-4 bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-100 dark:border-slate-800 shadow-sm transition-transform active:scale-[0.98]">
+<div class="size-12 rounded-full bg-primary/10 overflow-hidden flex-shrink-0">
+<img class="w-full h-full object-cover" data-alt="Professional headshot of a male member" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCwUzjTwra9c6l9HNY7fSKJacTxFDnz_SVz2ELtp37br6JFH3dn5mCxxBSErQL6KsgsF0W-0FergJ8dNj2U1fZh68azo02Wq5x1GW3EUaKGMtUdL-1sax1U0PcIXSV1lGu2jyhzmN1xA0eHQ9Vhj0Z3yLv-mDMc3jRy6pKjoHY8sI6e4T3Bg1bFN-DBHKl9DsYjrh6iqfv8r0xrLZz296RU2heH5efH5YVWpeha3ji2ptVJEKS8b-5HjTUVIt74DRVd-rDgBK8LBVmM"/>
+</div>
+<div class="flex-1 min-w-0">
+<h3 class="text-base font-semibold truncate">Alex Johnson</h3>
+<div class="flex items-center gap-2 mt-1">
+<span class="px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-[10px] font-bold uppercase tracking-wider">Team A</span>
+<span class="text-xs text-slate-500">Active now</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-slate-300">chevron_right</span>
+</div>
+<div class="flex items-center gap-4 bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-100 dark:border-slate-800 shadow-sm transition-transform active:scale-[0.98]">
+<div class="size-12 rounded-full bg-primary/10 overflow-hidden flex-shrink-0">
+<img class="w-full h-full object-cover" data-alt="Friendly portrait of a female member" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDCC-_lTCxErg0CIpSa42ay8yJdAbBNT6EfhBV4pzJTmNOZ6NMlI0Ac7mli2MVjNx3o3obJUM5Es5bz9jVhI8IHtnqnWXM_kHqolBxM65D-iq0fbpKjwcsrkiwaj6t0M1GI5BqB-tzbTjnSGZxWTMXirZysZ4PSXmblOn5VONi8IVB3gljHrQiQ4KcjAKNmn9BQPkwzV6mxLaabF8-uCkW92DI1wu2oSaVycNkSgUU8dyOXyX6yOfwZ6wC_7S_7ycTLUKQHSEE16HnC"/>
+</div>
+<div class="flex-1 min-w-0">
+<h3 class="text-base font-semibold truncate">Sarah Miller</h3>
+<div class="flex items-center gap-2 mt-1">
+<span class="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold uppercase tracking-wider">Team B</span>
+<span class="text-xs text-slate-500">2h ago</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-slate-300">chevron_right</span>
+</div>
+<div class="flex items-center gap-4 bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-100 dark:border-slate-800 shadow-sm transition-transform active:scale-[0.98]">
+<div class="size-12 rounded-full bg-primary/10 overflow-hidden flex-shrink-0">
+<img class="w-full h-full object-cover" data-alt="Smiling face of a male member" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBY28pWMB_Li7Q8BbIGK4J0ayfhD23dCgSYodQjvnTnmcCWJzOnlYcOAponT50eBRD0VpFeDpAHRDotcP793I5FoN4KAFb2o0FXX64DPQBVOAtFAENvcMd6d2YbGFUDW8F7QgszduPAHxmc9EG2H4Ne2KgZzUH_-MaiTcZo3IUUO3VJA4Xl_ftxgo4or8KmdPxN6-5Obqu7XMLuNeeTyLN6CIMR3oaqlwjLxOJttqGop0EYy4bJP9o4QDoxFbt9gYoGEVUJuuq23mZ4"/>
+</div>
+<div class="flex-1 min-w-0">
+<h3 class="text-base font-semibold truncate">James Wilson</h3>
+<div class="flex items-center gap-2 mt-1">
+<span class="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-wider">None</span>
+<span class="text-xs text-slate-500">Yesterday</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-slate-300">chevron_right</span>
+</div>
+<div class="flex items-center gap-4 bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-100 dark:border-slate-800 shadow-sm transition-transform active:scale-[0.98]">
+<div class="size-12 rounded-full bg-primary/10 overflow-hidden flex-shrink-0">
+<img class="w-full h-full object-cover" data-alt="Portrait of a young woman member" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAS95Q9Fz3AX52wO3KZt5z4G6pnoBmVevHnrj3t4N9k9UbgkNTQsS--LoRorPnxgjS70SJvHFgOmINVXG8t5YztjFqTC0gHTUxo-J2qxnSsUbeal_fHhVatfOo1w1eHyx8xcLVjzVlhgmx41sRhYcFSrpoNElXv0fB22UsMl68eIOwX0otX5sogGD52RtXRJdZWZIZLMrvuTmeMSPi_tfypAI9oG-v8eGOL5XO0aq99xSXWZDQb7VsGIPPeJJua78BpeVPNxUyyh4PH"/>
+</div>
+<div class="flex-1 min-w-0">
+<h3 class="text-base font-semibold truncate">Elena Rodriguez</h3>
+<div class="flex items-center gap-2 mt-1">
+<span class="px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 text-[10px] font-bold uppercase tracking-wider">Team C</span>
+<span class="text-xs text-slate-500">Active now</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-slate-300">chevron_right</span>
+</div>
+<div class="flex items-center gap-4 bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-100 dark:border-slate-800 shadow-sm transition-transform active:scale-[0.98]">
+<div class="size-12 rounded-full bg-primary/10 overflow-hidden flex-shrink-0 flex items-center justify-center text-primary font-bold">
+                    TC
+                </div>
+<div class="flex-1 min-w-0">
+<h3 class="text-base font-semibold truncate">Thomas Chen</h3>
+<div class="flex items-center gap-2 mt-1">
+<span class="px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-[10px] font-bold uppercase tracking-wider">Team A</span>
+<span class="text-xs text-slate-500">3d ago</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-slate-300">chevron_right</span>
+</div>
+<div class="flex items-center gap-4 bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-100 dark:border-slate-800 shadow-sm transition-transform active:scale-[0.98]">
+<div class="size-12 rounded-full bg-primary/10 overflow-hidden flex-shrink-0">
+<img class="w-full h-full object-cover" data-alt="Portrait of a male professional member" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC6PzWS3pS-1TxJIwiWbkVCJX-wpaGNwtO5lwYrDhmDZcjbki4MrP6Y6EDkUTYwUmy61Rmt-QkdpXf_flFKpj25aRpYS5jIyg93j_4KzoJo-9UYq5m-AfT1bxmO0YFznvOF2RaimsOjd_HFgUoewtAj9RA0DsM6j2BdhNYN31zbqIIhXm2Rc9pXC8bfWwDKi5Cq6Cga7uclP-o1tI1PZZH9ZnfCN7NgbKFqT-fq9M1_gQlnfZuMp4a0UOLea_4UydggycQuNvF8pGi7"/>
+</div>
+<div class="flex-1 min-w-0">
+<h3 class="text-base font-semibold truncate">Robert Patterson</h3>
+<div class="flex items-center gap-2 mt-1">
+<span class="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold uppercase tracking-wider">Team B</span>
+<span class="text-xs text-slate-500">Just registered</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-slate-300">chevron_right</span>
+</div>
+</div>
+</main>
+<button class="fixed right-6 bottom-24 bg-primary text-white size-14 rounded-full shadow-lg shadow-primary/30 flex items-center justify-center transition-transform hover:scale-105 active:scale-95">
+<span class="material-symbols-outlined text-3xl">person_add</span>
+</button>
+<nav class="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 px-4 pt-2 pb-6 flex justify-between items-center z-10">
+<a class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="text-[10px] font-medium">Home</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">calendar_today</span>
+<span class="text-[10px] font-medium">Sessions</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">school</span>
+<span class="text-[10px] font-medium">Programs</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-primary" href="#">
+<span class="material-symbols-outlined active-icon">group</span>
+<span class="text-[10px] font-bold">Members</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="text-[10px] font-medium">Reports</span>
+</a>
+</nav>
+</body></html>

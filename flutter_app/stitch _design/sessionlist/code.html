@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#0f49bd",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#101622",
+                    },
+                    fontFamily: {
+                        "display": ["Plus Jakarta Sans"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<title>Guest Welcome Attendance - Sessions</title>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100">
+<div class="relative flex min-h-screen w-full flex-col overflow-x-hidden">
+<!-- Header -->
+<header class="sticky top-0 z-10 flex items-center bg-background-light dark:bg-background-dark border-b border-slate-200 dark:border-slate-800 p-4 justify-between">
+<div class="flex size-10 shrink-0 items-center justify-center rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 cursor-pointer">
+<span class="material-symbols-outlined text-slate-900 dark:text-slate-100">menu</span>
+</div>
+<h2 class="text-lg font-bold leading-tight tracking-tight flex-1 text-center">Sessions</h2>
+<div class="flex size-10 items-center justify-end">
+<button class="flex items-center justify-center rounded-full bg-primary/10 p-1">
+<span class="material-symbols-outlined text-primary">account_circle</span>
+</button>
+</div>
+</header>
+<!-- Search Section -->
+<div class="px-4 py-4 sticky top-[72px] bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md z-10">
+<label class="flex flex-col min-w-40 h-12 w-full">
+<div class="flex w-full flex-1 items-stretch rounded-xl h-full shadow-sm">
+<div class="flex border-none bg-white dark:bg-slate-800 items-center justify-center pl-4 rounded-l-xl">
+<span class="material-symbols-outlined text-slate-400">search</span>
+</div>
+<input class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-r-xl text-slate-900 dark:text-slate-100 focus:outline-0 focus:ring-0 border-none bg-white dark:bg-slate-800 h-full placeholder:text-slate-400 px-4 pl-2 text-base font-normal leading-normal" placeholder="Search sessions or dates..." value=""/>
+</div>
+</label>
+</div>
+<!-- Scrollable Content -->
+<main class="flex-1 pb-24">
+<!-- Group: Today -->
+<section class="mt-2">
+<h3 class="text-slate-900 dark:text-slate-100 text-sm font-bold uppercase tracking-wider px-4 pb-3 pt-2 opacity-60">Today</h3>
+<div class="px-4 space-y-3">
+<!-- Session Card 1 -->
+<div class="flex flex-col gap-3 rounded-xl bg-white dark:bg-slate-800 p-4 shadow-sm border border-slate-100 dark:border-slate-700">
+<div class="flex justify-between items-start gap-3">
+<div class="flex-1">
+<p class="text-primary text-xs font-bold uppercase mb-1">Live Now</p>
+<h4 class="text-slate-900 dark:text-slate-100 text-base font-bold leading-tight">Wednesday Bible Study</h4>
+<p class="text-slate-500 dark:text-slate-400 text-sm mt-1">7:00 PM - 8:30 PM</p>
+</div>
+<div class="bg-primary/10 text-primary px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap">
+                                85 Present
+                            </div>
+</div>
+<div class="flex items-center justify-between pt-2 mt-2 border-t border-slate-50 dark:border-slate-700">
+<div class="flex -space-x-2">
+<div class="w-7 h-7 rounded-full border-2 border-white dark:border-slate-800 bg-slate-200" data-alt="Attendee avatar profile image thumbnail" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCLhayWKLoxZ3ZBUK5cauh4ACTRCtEuEzPmIuU6K3NzRbzBDt0jcaWOsS3l52fO72diGBiLeqVuC3X5ChGOCzJa8VrUI15Y_r8JXh4d0CkdBYEwZ-8R-MTPhNbxa0zw8qD2QuWzDGqpIK3HGOpYR8r1fcVdfLVJpWON4uh3LNX87qYz3v799_-p3znwfbL9cuSEINO_BviZEZWOl2nxDJaGP0FxN7zfBR4iDojiuF-C5uAy8pP4CbFhkK1d4h50jQz0UmiF9mwHnCPi')"></div>
+<div class="w-7 h-7 rounded-full border-2 border-white dark:border-slate-800 bg-slate-300" data-alt="Attendee avatar profile image thumbnail" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuA9TybjmpOtNZM1sZWRGaKoZjMxfODMI6fbf2SOt4Cd3G5R3SjwJ2IjW-Gm229JZxZbtu67hgBtQW6WyDJsideth4wPa9Soa9CYCOrb_VLdZkw2g9eJfifPnFGVGcWfHWD-hrF5Mbr_z5w37kqal9S1vzivUcQg2kcOz9w-4tDDHP8odIWXJQXnZvxRrSN_2VIWS-3cP1gw9_mwICran7mDM1a4_U8hDfZAdgPJY2bJCzWM9K29I_OzObfIGhnkUKc4k-ICOMG8nFGR')"></div>
+<div class="w-7 h-7 rounded-full border-2 border-white dark:border-slate-800 bg-slate-400" data-alt="Attendee avatar profile image thumbnail" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAU8UBDsI1iIahC1YNdYP3ongJK5v8mjjmc9ZccErroYH70GslU_yXn0F_-jLWyOwhIlg8j97THqKDiaYt5c5ZjLNGyDYi7t-xIDOvhE3Sk8kC7Lv_E5pvlmQKwYy0x158fH4kOOvb9TIRu3HweKASH4j5lWGXmDNh9FtjJvmGrqaWdFymUkHbQr1q3R0Db859GuHMormmEJo9IH1cSZNIxvoOWUkekvraQ1vNg9KqfBUvRHlrNE4QGSfW-m7bDG8C7JfKyA1rGYTni')"></div>
+<div class="w-7 h-7 rounded-full border-2 border-white dark:border-slate-800 bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-500">+82</div>
+</div>
+<button class="text-primary text-sm font-bold flex items-center gap-1">
+                                Details <span class="material-symbols-outlined text-sm">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+</section>
+<!-- Group: Yesterday -->
+<section class="mt-6">
+<h3 class="text-slate-900 dark:text-slate-100 text-sm font-bold uppercase tracking-wider px-4 pb-3 pt-2 opacity-60">Yesterday</h3>
+<div class="px-4 space-y-3">
+<!-- Session Card 2 -->
+<div class="flex flex-col gap-3 rounded-xl bg-white dark:bg-slate-800 p-4 shadow-sm border border-slate-100 dark:border-slate-700 opacity-90">
+<div class="flex justify-between items-start gap-3">
+<div class="flex-1">
+<h4 class="text-slate-900 dark:text-slate-100 text-base font-bold leading-tight">Morning Prayer Group</h4>
+<p class="text-slate-500 dark:text-slate-400 text-sm mt-1">Tuesday, 6:30 AM - 7:30 AM</p>
+</div>
+<div class="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap">
+                                42 Present
+                            </div>
+</div>
+<button class="w-full mt-2 py-2 bg-slate-50 dark:bg-slate-700/50 text-slate-600 dark:text-slate-300 rounded-lg text-sm font-medium">View Report</button>
+</div>
+</div>
+</section>
+<!-- Group: Last Sunday -->
+<section class="mt-6">
+<h3 class="text-slate-900 dark:text-slate-100 text-sm font-bold uppercase tracking-wider px-4 pb-3 pt-2 opacity-60">Last Sunday</h3>
+<div class="px-4 space-y-3">
+<!-- Session Card 3 -->
+<div class="flex flex-col gap-3 rounded-xl bg-white dark:bg-slate-800 p-4 shadow-sm border border-slate-100 dark:border-slate-700">
+<div class="flex justify-between items-start gap-3">
+<div class="flex-1">
+<h4 class="text-slate-900 dark:text-slate-100 text-base font-bold leading-tight">Main Sunday Service</h4>
+<p class="text-slate-500 dark:text-slate-400 text-sm mt-1">Sep 15, 10:00 AM - 12:00 PM</p>
+</div>
+<div class="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap">
+                                312 Present
+                            </div>
+</div>
+<div class="w-full h-24 bg-slate-200 dark:bg-slate-900 rounded-lg overflow-hidden relative" data-alt="Abstract banner for Sunday service session" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDD4XxaaNtOdIK0YC3as-zl_HaJ9oGjS3hw0-xhLGAzWUS-wIcb1HSAnBjKR-NMOZoOBRwbqML7ycg7EGZf7IwVS6epeHS_lSgOZu_M8CvbHi4riDqpBODjQIJDxAzTa54yHfe8p6UWeO1X0WlwYmv_fbT8ipRr7QYyn8_5NuZVKCBkeskKP11lXRrDXISyXxc02czKn9aP-MeXTmw1B40hvUSKwWmOZUFRR5YImqyfLbC4JwLlMFWQCVtP5a7JHfkMgSuTdfIcpy4G')">
+<div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent flex items-end p-3">
+<span class="text-white text-xs font-medium">Recorded Session</span>
+</div>
+</div>
+</div>
+<!-- Session Card 4 -->
+<div class="flex flex-col gap-3 rounded-xl bg-white dark:bg-slate-800 p-4 shadow-sm border border-slate-100 dark:border-slate-700">
+<div class="flex justify-between items-start gap-3">
+<div class="flex-1">
+<h4 class="text-slate-900 dark:text-slate-100 text-base font-bold leading-tight">Youth Fellowship</h4>
+<p class="text-slate-500 dark:text-slate-400 text-sm mt-1">Sep 15, 4:00 PM - 6:00 PM</p>
+</div>
+<div class="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap">
+                                58 Present
+                            </div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Floating Action Button (Optional but useful for mobile app feel) -->
+<button class="fixed right-4 bottom-20 z-20 flex size-14 items-center justify-center rounded-full bg-primary text-white shadow-lg">
+<span class="material-symbols-outlined">add</span>
+</button>
+<!-- Bottom Navigation -->
+<nav class="fixed bottom-0 left-0 right-0 z-30 border-t border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 backdrop-blur-lg px-4 pb-6 pt-3">
+<div class="flex gap-2">
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-slate-400 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">home</span>
+<p class="text-[10px] font-semibold uppercase tracking-tight">Home</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-primary" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1">calendar_today</span>
+<p class="text-[10px] font-bold uppercase tracking-tight">Sessions</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-slate-400 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">layers</span>
+<p class="text-[10px] font-semibold uppercase tracking-tight">Programs</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-slate-400 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">group</span>
+<p class="text-[10px] font-semibold uppercase tracking-tight">Members</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-slate-400 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">bar_chart</span>
+<p class="text-[10px] font-semibold uppercase tracking-tight">Reports</p>
+</a>
+</div>
+</nav>
+</div>
+</body></html>

@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#0f49bd",
+                        "accent": "#f59e0b",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#101622",
+                    },
+                    fontFamily: {
+                        "display": ["Plus Jakarta Sans"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<title>Church Attendance Reports</title>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen flex flex-col">
+<!-- Header -->
+<header class="flex items-center bg-white dark:bg-slate-900 p-4 sticky top-0 z-10 border-b border-primary/10">
+<h1 class="text-xl font-bold leading-tight tracking-tight flex-1">Reports</h1>
+<div class="flex items-center justify-end">
+<button class="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary hover:bg-primary hover:text-white transition-colors">
+<span class="material-symbols-outlined">tune</span>
+</button>
+</div>
+</header>
+<!-- Content Area -->
+<main class="flex-1 pb-24">
+<!-- Filter Tabs/Chips -->
+<div class="flex gap-3 p-4 overflow-x-auto no-scrollbar">
+<div class="flex h-9 shrink-0 items-center justify-center px-4 rounded-full bg-primary text-white text-sm font-semibold shadow-md shadow-primary/20">
+                Overall
+            </div>
+<div class="flex h-9 shrink-0 items-center justify-center px-4 rounded-full bg-white dark:bg-slate-800 border border-primary/20 text-slate-600 dark:text-slate-300 text-sm font-medium">
+                Team A
+            </div>
+<div class="flex h-9 shrink-0 items-center justify-center px-4 rounded-full bg-white dark:bg-slate-800 border border-primary/20 text-slate-600 dark:text-slate-300 text-sm font-medium">
+                Team B
+            </div>
+<div class="flex h-9 shrink-0 items-center justify-center px-4 rounded-full bg-white dark:bg-slate-800 border border-primary/20 text-slate-600 dark:text-slate-300 text-sm font-medium">
+                Team C
+            </div>
+</div>
+<!-- Summary Stats -->
+<div class="grid grid-cols-2 gap-4 px-4 mb-6">
+<div class="flex flex-col gap-2 rounded-xl p-5 bg-white dark:bg-slate-800 border border-primary/10 shadow-sm">
+<span class="material-symbols-outlined text-primary mb-1">calendar_today</span>
+<p class="text-slate-500 dark:text-slate-400 text-xs font-semibold uppercase tracking-wider">Avg Attendance</p>
+<p class="text-2xl font-bold text-primary">88%</p>
+</div>
+<div class="flex flex-col gap-2 rounded-xl p-5 bg-white dark:bg-slate-800 border border-primary/10 shadow-sm">
+<span class="material-symbols-outlined text-accent mb-1">groups</span>
+<p class="text-slate-500 dark:text-slate-400 text-xs font-semibold uppercase tracking-wider">Total Members</p>
+<p class="text-2xl font-bold text-slate-900 dark:text-white">1,240</p>
+</div>
+</div>
+<!-- Attendance Trends -->
+<section class="px-4 mb-8">
+<h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+<span class="w-1 h-6 bg-primary rounded-full"></span>
+                Attendance Trends
+            </h3>
+<div class="bg-white dark:bg-slate-800 p-6 rounded-xl border border-primary/10 shadow-sm">
+<div class="flex items-end justify-between h-32 gap-2">
+<div class="flex-1 flex flex-col items-center gap-2">
+<div class="w-full bg-primary/20 rounded-t-lg relative" style="height: 60%">
+<div class="absolute inset-0 bg-primary opacity-30 rounded-t-lg"></div>
+</div>
+<span class="text-[10px] text-slate-400 font-bold">SEP 1</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-2">
+<div class="w-full bg-primary/20 rounded-t-lg relative" style="height: 75%">
+<div class="absolute inset-0 bg-primary opacity-50 rounded-t-lg"></div>
+</div>
+<span class="text-[10px] text-slate-400 font-bold">SEP 8</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-2">
+<div class="w-full bg-primary/20 rounded-t-lg relative" style="height: 90%">
+<div class="absolute inset-0 bg-primary opacity-80 rounded-t-lg"></div>
+</div>
+<span class="text-[10px] text-slate-400 font-bold">SEP 15</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-2">
+<div class="w-full bg-primary/20 rounded-t-lg relative" style="height: 82%">
+<div class="absolute inset-0 bg-primary opacity-60 rounded-t-lg"></div>
+</div>
+<span class="text-[10px] text-slate-400 font-bold">SEP 22</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-2">
+<div class="w-full bg-primary rounded-t-lg" style="height: 95%"></div>
+<span class="text-[10px] text-primary font-bold">TODAY</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Monthly Leaderboard -->
+<section class="px-4 mb-8">
+<div class="flex justify-between items-center mb-4">
+<h3 class="text-lg font-bold flex items-center gap-2">
+<span class="w-1 h-6 bg-accent rounded-full"></span>
+                    Monthly Leaderboard
+                </h3>
+<button class="text-xs font-bold text-primary uppercase tracking-wider">See All</button>
+</div>
+<div class="flex flex-col gap-3">
+<!-- Leader 1 -->
+<div class="flex items-center gap-4 p-4 bg-white dark:bg-slate-800 rounded-xl border border-primary/5 shadow-sm">
+<div class="relative">
+<img class="w-12 h-12 rounded-full object-cover border-2 border-accent" data-alt="Portrait of a smiling young man" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCWp-sz4oO-RWD8tm3fvGMNiMQNblQu-t_sMoYECR_rSdtHfE-Og0CqPfgXrZ20IHJ-6z0_4AP76iigXSKr2GWTow8EJvq_SZvOo8b5_aIox_FWOW92E8XEs3jozrWnvYguXB4UdiTOFHmFlsGn3vxdztsTYgwNxw-qjc3ywODS8MBK9RibSYx3jkvi5gzPOBt1Pm3FmKWOzpE2uvkJspW6VQS3-bAUAhJv_fa1-AFK4Ia-lqSPRcgkNY4R1HOJl02sGenN3sC_s_TR"/>
+<div class="absolute -bottom-1 -right-1 bg-accent text-white rounded-full p-0.5 shadow-sm">
+<span class="material-symbols-outlined text-xs leading-none" style="font-variation-settings: 'FILL' 1">stars</span>
+</div>
+</div>
+<div class="flex-1 min-w-0">
+<p class="font-bold text-slate-900 dark:text-white truncate">David Miller</p>
+<div class="flex items-center gap-2">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-accent/10 text-accent uppercase">Top Attender</span>
+</div>
+</div>
+<div class="text-right">
+<p class="text-lg font-bold text-primary">100%</p>
+<p class="text-[10px] text-slate-400 font-medium">5/5 Sessions</p>
+</div>
+</div>
+<!-- Leader 2 -->
+<div class="flex items-center gap-4 p-4 bg-white dark:bg-slate-800 rounded-xl border border-primary/5 shadow-sm">
+<img class="w-12 h-12 rounded-full object-cover border border-slate-200" data-alt="Portrait of a young professional woman" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCt8QL9iqdonJAVWMJEmI3JbG4G0wZuLwrmwJAsWMoIVVT7poftmZxE-Dekq-SzuNr6LqwlkXrkuTK9BfTNjmAOe9s3hVZNlCRVO0PX7rKzY51qX0xV9o0D7hUIKIU5eHDWGDVojePmcA3CiWGc__SEpgEFacEHDqqLdsYYpaYx1r3D5_XCBfxnHILBgdEDY-CR83pJb8IvcdW_uMZR6jX5AaQ2HyQ87XAruM04oAcUd6KBUgl51XvN_XYfYE9rodG47gnNpvPDcCqM"/>
+<div class="flex-1 min-w-0">
+<p class="font-bold text-slate-900 dark:text-white truncate">Sarah Jenkins</p>
+<p class="text-xs text-slate-500">Choir Member</p>
+</div>
+<div class="text-right">
+<p class="text-lg font-bold text-slate-700 dark:text-slate-300">98%</p>
+<p class="text-[10px] text-slate-400 font-medium">45/46 Sessions</p>
+</div>
+</div>
+<!-- Leader 3 -->
+<div class="flex items-center gap-4 p-4 bg-white dark:bg-slate-800 rounded-xl border border-primary/5 shadow-sm">
+<img class="w-12 h-12 rounded-full object-cover border border-slate-200" data-alt="Portrait of a middle aged man" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDd3Ui9at2CHLzQ0dThZLfSs6AOTsogOTCRM8y4OzULQDQFyW_gJeSIQe2G_ueCO7ZBcq4sQbaewFoJl1lxnovAaN3or-joX41KYvCd1fmLaiJaabsxSbaKt9_1Faky7f7IilF1pd0D9LdL95J46-a1dQxuCdCLJsiPqYr1cfwOdUHXX2thMPiPVHQfZB3rhFy_iGCQwwbzNR-tE9ikDCG6y3ix7Bd9eFu2_FPPKz8Yb1fhCgoe2iweYYeV2gYjpovCmNglsbugmBXz"/>
+<div class="flex-1 min-w-0">
+<p class="font-bold text-slate-900 dark:text-white truncate">Robert Chen</p>
+<p class="text-xs text-slate-500">Youth Lead</p>
+</div>
+<div class="text-right">
+<p class="text-lg font-bold text-slate-700 dark:text-slate-300">95%</p>
+<p class="text-[10px] text-slate-400 font-medium">43/45 Sessions</p>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Bottom Navigation Bar -->
+<nav class="fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-900 border-t border-primary/10 px-4 pb-6 pt-2 flex items-center justify-around z-20">
+<a class="flex flex-col items-center gap-1 text-slate-400 dark:text-slate-500" href="#">
+<span class="material-symbols-outlined">house</span>
+<span class="text-[10px] font-medium">Home</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-400 dark:text-slate-500" href="#">
+<span class="material-symbols-outlined">calendar_month</span>
+<span class="text-[10px] font-medium">Events</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-primary" href="#">
+<div class="relative flex items-center justify-center">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1">bar_chart</span>
+<div class="absolute -top-1 -right-1 w-1.5 h-1.5 bg-accent rounded-full"></div>
+</div>
+<span class="text-[10px] font-bold">Reports</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-400 dark:text-slate-500" href="#">
+<span class="material-symbols-outlined">person</span>
+<span class="text-[10px] font-medium">Profile</span>
+</a>
+</nav>
+</body></html>
