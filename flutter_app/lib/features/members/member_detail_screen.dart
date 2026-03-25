@@ -6,11 +6,17 @@
 //   Points / present count + recent attendance history
 //   Edit button opens _EditMemberSheet
 
+import 'dart:io';
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../models/member.dart';
 import '../../models/clock_in.dart';
@@ -63,10 +69,20 @@ class MemberDetailScreen extends ConsumerWidget {
           memberAsync.when(
             data: (m) => m == null
                 ? const SizedBox.shrink()
-                : IconButton(
-                    icon: const Icon(Icons.edit_outlined),
-                    tooltip: 'Edit member',
-                    onPressed: () => _openEditSheet(context, ref, m),
+                : Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.send_outlined),
+                        tooltip: 'Share on WhatsApp',
+                        onPressed: () => _shareMemberOnWhatsApp(context, m),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.edit_outlined),
+                        tooltip: 'Edit member',
+                        onPressed: () => _openEditSheet(context, ref, m),
+                      ),
+                    ],
                   ),
             loading: () => const SizedBox.shrink(),
             error: (_, __) => const SizedBox.shrink(),
@@ -149,6 +165,69 @@ class MemberDetailScreen extends ConsumerWidget {
         },
       ),
     );
+  }
+
+  Future<void> _shareMemberOnWhatsApp(BuildContext context, Member member) async {
+    final firstName = member.fullName.split(' ').first;
+    final code = member.offlineCode;
+    final msg =
+        'Hi $firstName!\n\n'
+        "You've been registered as a member of the Guest Welcome Ministry!\n\n"
+        'Your personal attendance code is:\n\n'
+        '*$code*\n\n'
+        'How to check in at service:\n'
+        '📱 Scan your personal QR code (see image), OR\n'
+        '🔢 Enter your 6-digit code: $code\n\n'
+        "We're so blessed to have you with us! "
+        'The Lord bless you and keep you!\n\n'
+        'Guest Welcome Unit';
+
+    try {
+      // Render QR with white background
+      const size = 300.0;
+      final recorder = ui.PictureRecorder();
+      final canvas = Canvas(recorder);
+      canvas.drawRect(
+        const Rect.fromLTWH(0, 0, size, size),
+        Paint()..color = const Color(0xFFFFFFFF),
+      );
+      final painter = QrPainter(
+        data: code,
+        version: QrVersions.auto,
+        errorCorrectionLevel: QrErrorCorrectLevel.M,
+      );
+      painter.paint(canvas, const Size(size, size));
+      final picture = recorder.endRecording();
+      final img = await picture.toImage(size.toInt(), size.toInt());
+      final byteData = await img.toByteData(format: ui.ImageByteFormat.png);
+      if (byteData == null) throw Exception('QR render failed');
+      final bytes = byteData.buffer.asUint8List();
+
+      final tempDir = await getTemporaryDirectory();
+      final file = File('${tempDir.path}/qr_$code.png');
+      await file.writeAsBytes(bytes);
+
+      await Share.shareXFiles(
+        [XFile(file.path, mimeType: 'image/png', name: 'qr_$code.png')],
+        text: msg,
+      );
+    } catch (_) {
+      // Fallback: WhatsApp text only
+      final uri = Uri.parse('https://wa.me/?text=${Uri.encodeComponent(msg)}');
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        await Clipboard.setData(ClipboardData(text: msg));
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Message copied to clipboard'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      }
+    }
   }
 
   void _openEditSheet(BuildContext context, WidgetRef ref, Member member) {
@@ -239,6 +318,30 @@ class _ProfileCard extends StatelessWidget {
                   member.phone,
                   style: const TextStyle(
                       fontSize: 13, color: AppTheme.slate500),
+                ),
+                const SizedBox(width: 10),
+                GestureDetector(
+                  onTap: () async {
+                    final uri = Uri.parse('tel:${member.phone}');
+                    if (await canLaunchUrl(uri)) {
+                      await launchUrl(uri);
+                    }
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primary,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Text(
+                      'Call',
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600),
+                    ),
+                  ),
                 ),
               ],
             ),

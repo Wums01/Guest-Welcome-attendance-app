@@ -105,6 +105,26 @@ class _OfflineCheckinScreenState
   Future<void> _submit() async {
     if (_code.length != 6 || _loading) return;
 
+    // Re-check gate state right now — the UI may not have refreshed yet
+    // even if the session closed a few seconds ago.
+    final session = ref
+        .read(_codeSessionProvider(widget.sessionId))
+        .valueOrNull;
+    final testMode =
+        ref.read(_testModeProvider).valueOrNull ?? false;
+    if (session != null && session.startTime != null && !testMode) {
+      final gate = sessionGateState(
+          session.startTime, session.endTime, nowInLagos());
+      if (gate == SessionGateState.closed) {
+        setState(() {
+          _feedback = _FeedbackState.error;
+          _message =
+              'Session is closed. Check-in is no longer available.';
+        });
+        return;
+      }
+    }
+
     setState(() => _loading = true);
 
     try {

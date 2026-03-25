@@ -106,6 +106,8 @@ class _ProgramsScreenState extends ConsumerState<ProgramsScreen> {
   String _search = '';
   // 'all' | 'weekly' | 'monthly'
   String _filterTab = 'all';
+  // Sort mode: 'latest' | 'oldest' | 'name'
+  String _sortMode = 'latest';
 
   List<Program> _applyFilters(List<Program> programs) {
     var list = programs;
@@ -127,7 +129,67 @@ class _ProgramsScreenState extends ConsumerState<ProgramsScreen> {
               p.programType == ProgramType.training)
           .toList();
     }
+    // Apply sort
+    switch (_sortMode) {
+      case 'oldest':
+        list = [...list]..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+      case 'name':
+        list = [...list]..sort((a, b) => a.title.compareTo(b.title));
+      default: // 'latest' — already ordered by createdAt desc from DB
+        break;
+    }
     return list;
+  }
+
+  void _showSortSheet() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (_) {
+        return SafeArea(
+          child: StatefulBuilder(builder: (ctx, setLocal) {
+            Widget option(String mode, String label, IconData icon) {
+              final selected = _sortMode == mode;
+              return ListTile(
+                leading: Icon(icon,
+                    color: selected ? AppTheme.primary : null),
+                title: Text(label,
+                    style: TextStyle(
+                        color: selected ? AppTheme.primary : null,
+                        fontWeight: selected
+                            ? FontWeight.bold
+                            : FontWeight.normal)),
+                trailing: selected
+                    ? const Icon(Icons.check, color: AppTheme.primary)
+                    : null,
+                onTap: () {
+                  setState(() => _sortMode = mode);
+                  Navigator.of(context).pop();
+                },
+              );
+            }
+
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 8),
+                const ListTile(
+                  title: Text('Sort Programs',
+                      style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+                const Divider(height: 1),
+                option('latest', 'Latest first', Icons.arrow_downward),
+                option('oldest', 'Oldest first', Icons.arrow_upward),
+                option('name', 'Name A–Z', Icons.sort_by_alpha),
+                const SizedBox(height: 8),
+              ],
+            );
+          }),
+        );
+      },
+    );
   }
 
   void _openCreateSheet() {
@@ -167,10 +229,12 @@ class _ProgramsScreenState extends ConsumerState<ProgramsScreen> {
         backgroundColor: AppTheme.surface,
         centerTitle: true,
         leading: GestureDetector(
-          onTap: () => context.go('/sessions'),
+          onTap: () => context.push('/sessions'),
           child: Padding(
             padding: const EdgeInsets.all(10),
             child: Container(
+              width: 38,
+              height: 38,
               decoration: BoxDecoration(
                 color: AppTheme.primaryBg,
                 borderRadius: BorderRadius.circular(10),
@@ -184,12 +248,7 @@ class _ProgramsScreenState extends ConsumerState<ProgramsScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.more_vert),
-            onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Sort & filter coming soon'),
-                duration: Duration(seconds: 2),
-              ),
-            ),
+            onPressed: _showSortSheet,
           ),
         ],
       ),

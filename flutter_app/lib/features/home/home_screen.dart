@@ -15,6 +15,7 @@ import '../../widgets/avatar_widget.dart';
 import '../../widgets/team_badge.dart';
 import '../../core/notifications.dart';
 import '../../services/attendance_service.dart';
+import '../../providers/auth_provider.dart';
 
 // ── Providers ────────────────────────────────────────────────────────────────
 
@@ -25,6 +26,30 @@ final _membersProvider = FutureProvider<List<Member>>((ref) {
 final _todaySessionsProvider = FutureProvider<List<Session>>((ref) {
   final today = formatDateISO(nowInLagos());
   return ref.read(sessionServiceProvider).getSessionsByDate(today);
+});
+
+/// Picks the best "upcoming" session for today:
+/// 1. Currently open/no-gate session wins
+/// 2. Falls back to earliest tooEarly session
+/// 3. Returns null when all sessions are closed (or no sessions)
+final _upcomingSessionProvider = FutureProvider<Session?>((ref) async {
+  final today = formatDateISO(nowInLagos());
+  final sessions =
+      await ref.read(sessionServiceProvider).getSessionsByDate(today);
+  if (sessions.isEmpty) return null;
+  final now = nowInLagos();
+  final open = sessions.where((s) {
+    final g = sessionGateState(s.startTime, s.endTime, now);
+    return g == SessionGateState.open || g == SessionGateState.noGate;
+  }).toList();
+  if (open.isNotEmpty) return open.first;
+  final soon = sessions
+      .where((s) =>
+          sessionGateState(s.startTime, s.endTime, now) ==
+          SessionGateState.tooEarly)
+      .toList()
+    ..sort((a, b) => (a.startTime ?? '').compareTo(b.startTime ?? ''));
+  return soon.isEmpty ? null : soon.first;
 });
 
 // Absence follow-up: members with no Sunday attendance in last 2 weeks
@@ -82,6 +107,8 @@ class HomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final membersAsync = ref.watch(_membersProvider);
     final sessionsAsync = ref.watch(_todaySessionsProvider);
+    final upcomingAsync = ref.watch(_upcomingSessionProvider);
+    final staff = ref.watch(currentStaffProvider).valueOrNull;
     final lagosNow = nowInLagos();
     final todayMMDD = formatMMDD(lagosNow);
     final todayFormatted = DateFormat('EEEE, MMMM d, y').format(lagosNow);
@@ -113,6 +140,7 @@ class HomeScreen extends ConsumerWidget {
       onRefresh: () async {
         ref.invalidate(_membersProvider);
         ref.invalidate(_todaySessionsProvider);
+        ref.invalidate(_upcomingSessionProvider);
         ref.invalidate(_absentMembersProvider);
         ref.invalidate(_topMembersProvider);
       },
@@ -125,27 +153,54 @@ class HomeScreen extends ConsumerWidget {
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
             child: Row(
               children: [
-                const CircleAvatar(
-                  radius: 22,
-                  backgroundColor: AppTheme.primaryBg,
-                  child: Icon(Icons.person, color: AppTheme.primary, size: 22),
+                // Profile avatar → /profile
+                GestureDetector(
+                  onTap: () => context.push('/profile'),
+                  child: Builder(builder: (ctx) {
+                    final initials = staff == null
+                        ? '?'
+                        : staff.fullName
+                            .trim()
+                            .split(' ')
+                            .where((p) => p.isNotEmpty)
+                            .take(2)
+                            .map((p) => p[0].toUpperCase())
+                            .join();
+                    return CircleAvatar(
+                      radius: 22,
+                      backgroundColor: AppTheme.primaryBg,
+                      backgroundImage: staff?.avatarUrl != null
+                          ? NetworkImage(staff!.avatarUrl!)
+                          : null,
+                      child: staff?.avatarUrl == null
+                          ? Text(
+                              initials,
+                              style: const TextStyle(
+                                color: AppTheme.primary,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                            )
+                          : null,
+                    );
+                  }),
                 ),
                 const SizedBox(width: 12),
-                const Expanded(
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Welcome, Admin',
-                        style: TextStyle(
+                        '${greetingFromHour(lagosNow.hour)}, ${staff?.fullName.split(' ').first ?? 'Admin'}',
+                        style: const TextStyle(
                           fontSize: 17,
                           fontWeight: FontWeight.w700,
                           color: Color(0xFF0F172A),
                         ),
                       ),
                       Text(
-                        'Guest Team Lead',
-                        style: TextStyle(
+                        staff?.role.displayName ?? 'Guest Team Lead',
+                        style: const TextStyle(
                           fontSize: 12,
                           color: AppTheme.slate500,
                           fontWeight: FontWeight.w500,
@@ -154,24 +209,74 @@ class HomeScreen extends ConsumerWidget {
                     ],
                   ),
                 ),
-                GestureDetector(
-                  onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Notifications coming soon'),
-                      duration: Duration(seconds: 2),
-                    ),
-                  ),
-                  child: Container(
-                    height: 40,
-                    width: 40,
-                    decoration: BoxDecoration(
-                      color: AppTheme.primaryBg,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(
-                      Icons.notifications_outlined,
-                      color: AppTheme.primary,
-                      size: 22,
+                // Bell — birthday/anniversary count badge
+                membersAsync.maybeWhen(
+                  data: (members) {
+                    final count = members
+                        .where((m) =>
+                            m.birthdayMD == todayMMDD ||
+                            m.anniversaryMD == todayMMDD)
+                        .length;
+                    return GestureDetector(
+                      onTap: () => context.push('/celebrations'),
+                      child: Container(
+                        height: 40,
+                        width: 40,
+                        decoration: BoxDecoration(
+                          color: AppTheme.primaryBg,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Stack(
+                          children: [
+                            const Center(
+                              child: Icon(
+                                Icons.notifications_outlined,
+                                color: AppTheme.primary,
+                                size: 22,
+                              ),
+                            ),
+                            if (count > 0)
+                              Positioned(
+                                top: 6,
+                                right: 6,
+                                child: Container(
+                                  width: 16,
+                                  height: 16,
+                                  decoration: const BoxDecoration(
+                                    color: AppTheme.error,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      count > 9 ? '9+' : '$count',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                  orElse: () => GestureDetector(
+                    onTap: () => context.push('/celebrations'),
+                    child: Container(
+                      height: 40,
+                      width: 40,
+                      decoration: BoxDecoration(
+                        color: AppTheme.primaryBg,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(
+                        Icons.notifications_outlined,
+                        color: AppTheme.primary,
+                        size: 22,
+                      ),
                     ),
                   ),
                 ),
@@ -209,16 +314,15 @@ class HomeScreen extends ConsumerWidget {
           // ── Upcoming Session card ───────────────────────────────────────────
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
-            child: sessionsAsync.when(
+            child: upcomingAsync.when(
               loading: () => _UpcomingSessionCard.loading(),
               error: (_, __) => _UpcomingSessionCard.empty(context),
-              data: (sessions) => sessions.isEmpty
-                  ? _UpcomingSessionCard.empty(context)
-                  : _UpcomingSessionCard(
-                      session: sessions.first,
-                      onCheckIn: () =>
-                          context.push('/sessions/${sessions.first.id}/checkin'),
-                    ),
+              data: (session) => _UpcomingSessionCard(
+                session: session,
+                onCheckIn: session == null
+                    ? () => context.go('/programs')
+                    : () => context.push('/sessions/${session.id}/checkin'),
+              ),
             ),
           ),
           const SizedBox(height: 16),
@@ -274,7 +378,7 @@ class HomeScreen extends ConsumerWidget {
                           ),
                         ),
                         TextButton(
-                          onPressed: () => context.go('/members'),
+                          onPressed: () => context.push('/celebrations'),
                           style: TextButton.styleFrom(
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 8, vertical: 0),
@@ -404,7 +508,14 @@ class _UpcomingSessionCard extends StatelessWidget {
                   ),
                 ),
                 child: const Center(
-                  child: Icon(Icons.church, size: 64, color: Colors.white30),
+                  child: Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Image(
+                      image: AssetImage('assets/images/elevation-logo.png'),
+                      height: 80,
+                      fit: BoxFit.contain,
+                    ),
+                  ),
                 ),
               ),
               Container(
@@ -751,7 +862,6 @@ class _TopMembersSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (leaders.isEmpty) return const SizedBox.shrink();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -779,6 +889,26 @@ class _TopMembersSection extends StatelessWidget {
             ],
           ),
         ),
+        if (leaders.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: AppTheme.surface,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppTheme.slate200),
+              ),
+              child: const Center(
+                child: Text(
+                  'No check-ins recorded this month yet.',
+                  style: TextStyle(color: AppTheme.slate500, fontSize: 13),
+                ),
+              ),
+            ),
+          )
+        else
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Column(

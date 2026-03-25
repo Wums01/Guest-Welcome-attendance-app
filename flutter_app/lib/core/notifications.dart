@@ -6,6 +6,8 @@
 // Uses flutter_local_notifications (no FCM/server needed).
 // All notifications are device-local and fire at scheduled times.
 
+import 'dart:math';
+
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import '../models/member.dart';
@@ -79,6 +81,32 @@ class NotificationService {
       99999,
       '⚠️  Follow-up Needed',
       '$names$extra ${members.length == 1 ? 'has' : 'have'} not attended in 2+ Sundays.',
+      _details(),
+    );
+  }
+
+  /// Show a notification when weekly sessions are generated.
+  ///
+  /// Messages are based on the A.S.H.L.I.E values (Accountability, Service,
+  /// Humility, Love, Integrity, Excellence).
+  static Future<void> showWeeklySessionGenerationNotification(int createdCount) async {
+    if (createdCount <= 0) return;
+
+    const messages = [
+      'Accountability: Your team is ready — sessions are now set for the week!',
+      'Service: New sessions have been created. Let’s serve well this week!',
+      'Humility: A fresh start is ready for your team — let’s keep growing.',
+      'Love: These sessions are an opportunity to love people well — go be present.',
+      'Integrity: Your schedule is built. Now lead with consistency and care.',
+      'Excellence: You’re set up for an excellent week — keep the momentum going!',
+    ];
+
+    final message = messages[Random().nextInt(messages.length)];
+
+    await _plugin.show(
+      100000,
+      '✅ Weekly sessions ready',
+      'Generated $createdCount session${createdCount == 1 ? '' : 's'}. $message',
       _details(),
     );
   }

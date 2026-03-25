@@ -7,6 +7,7 @@ import 'core/config.dart';
 import 'core/logger.dart';
 import 'core/notifications.dart';
 import 'providers/auth_provider.dart';
+import 'services/session_service.dart';
 
 /// ---------------------------------------------------------------------------
 /// Entry point
@@ -55,6 +56,22 @@ Future<void> main() async {
   // Bootstrap auth: restore persisted session before first frame.
   final container = ProviderContainer();
   await container.read(currentStaffProvider.notifier).load();
+
+  // Trigger automatic session generation for Sunday/Wednesday services.
+  // This is a fallback mechanism that ensures sessions are created even if
+  // the scheduled Supabase job doesn't run (e.g., server unavailable at midnight).
+  // The function is idempotent and only creates sessions for today if:
+  //   1. Today is a Sunday or Wednesday
+  //   2. Programs exist for this day
+  //   3. Sessions don't already exist
+  try {
+    final sessionService = SessionService(Supabase.instance.client);
+    final generatedCount = await sessionService.triggerAutoGenerateWeeklySessions();
+    await NotificationService.showWeeklySessionGenerationNotification(generatedCount);
+  } catch (e, stack) {
+    AppLogger.error(tag, 'Failed to trigger auto-generation (non-critical)', e, stack);
+    // Continue app startup even if this fails — it's just a best-effort mechanism
+  }
 
   runApp(
     UncontrolledProviderScope(

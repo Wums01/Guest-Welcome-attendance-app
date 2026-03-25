@@ -137,6 +137,7 @@ class SessionService {
     String? startTime,
     String? endTime,
     bool clockInRequired = true,
+    int newGuestCount = 0,
   }) async {
     AppLogger.info(_tag, 'createSession(name: "$name", date: $date)');
     try {
@@ -147,6 +148,7 @@ class SessionService {
         'start_time': startTime,
         'end_time': endTime,
         'clock_in_required': clockInRequired,
+        'new_guest_count': newGuestCount,
       };
       final data =
           await _client.from(_table).insert(insert).select().single();
@@ -167,9 +169,9 @@ class SessionService {
   }) async {
     AppLogger.info(_tag, 'createSundaySessions(date: $date)');
     const services = [
-      ('Service 1', '06:30', '08:30'),
-      ('Service 2', '08:30', '11:00'),
-      ('Service 3', '11:00', '13:30'),
+      ('Service 1', '06:30', '08:20'),
+      ('Service 2', '08:30', '10:20'),
+      ('Service 3', '10:30', '12:00'),
     ];
     final futures = services.map(
       (s) => createSession(
@@ -208,6 +210,7 @@ class SessionService {
     String? startTime,
     String? endTime,
     bool? clockInRequired,
+    int? newGuestCount,
   }) async {
     AppLogger.info(_tag, 'updateSession($sessionId)');
     try {
@@ -217,6 +220,7 @@ class SessionService {
       if (startTime != null) patch['start_time'] = startTime;
       if (endTime != null) patch['end_time'] = endTime;
       if (clockInRequired != null) patch['clock_in_required'] = clockInRequired;
+      if (newGuestCount != null) patch['new_guest_count'] = newGuestCount;
       if (patch.isEmpty) {
         AppLogger.warn(_tag, 'updateSession($sessionId) called with no changes');
         return;
@@ -238,6 +242,66 @@ class SessionService {
       AppLogger.info(_tag, 'deleteSession($sessionId) → ok');
     } catch (e, stack) {
       AppLogger.error(_tag, 'deleteSession($sessionId) failed', e, stack);
+      rethrow;
+    }
+  }
+
+  /// Triggers automatic generation of Sunday & Wednesday sessions.
+  /// This is called on app startup as a fallback if the scheduled job doesn't run.
+  /// The DB function auto_generate_weekly_sessions() handles the actual generation:
+  ///   - Creates sessions for active Sunday/Wednesday programs
+  ///   - Backfills recent missed dates when the scheduler was unavailable
+  ///   - Skips dates that already have sessions
+  Future<int> triggerAutoGenerateWeeklySessions() async {
+    AppLogger.info(_tag, 'triggerAutoGenerateWeeklySessions()');
+    try {
+      final result = await _client.rpc(
+        'auto_generate_weekly_sessions',
+        params: {},
+      );
+      
+      // Result contains generated_count from the RPC function
+      final generatedCount = (result as List?)?.firstOrNull?['generated_count'] as int? ?? 0;
+      
+      if (generatedCount > 0) {
+        AppLogger.info(_tag, 'triggerAutoGenerateWeeklySessions → generated $generatedCount sessions');
+      } else {
+        AppLogger.debug(_tag, 'triggerAutoGenerateWeeklySessions → no sessions to generate (not a Sunday/Wednesday or sessions already exist)');
+      }
+      
+      return generatedCount;
+    } catch (e, stack) {
+      // Don't fail the app if this fails — just log it
+      // This is a best-effort fallback mechanism
+      AppLogger.error(_tag, 'triggerAutoGenerateWeeklySessions failed (non-fatal)', e, stack);
+      return 0;
+    }
+  }
+
+  /// Manually generates Sunday/Wednesday sessions for a specific date.
+  /// Intended for the edge recovery button so staff can recover only today's
+  /// scheduled auto-created sessions when needed.
+  Future<int> generateWeeklySessionsForDate(String date) async {
+    AppLogger.info(_tag, 'generateWeeklySessionsForDate($date)');
+    try {
+      final result = await _client.rpc(
+        'generate_weekly_sessions_for_date',
+        params: {'p_target_date': date},
+      );
+
+      final generatedCount = (result as int?) ?? 0;
+      AppLogger.info(
+        _tag,
+        'generateWeeklySessionsForDate($date) → $generatedCount sessions',
+      );
+      return generatedCount;
+    } catch (e, stack) {
+      AppLogger.error(
+        _tag,
+        'generateWeeklySessionsForDate($date) failed',
+        e,
+        stack,
+      );
       rethrow;
     }
   }

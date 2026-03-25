@@ -4,9 +4,17 @@
 // Mirrors the inline utilities spread across Next.js page components.
 
 /// Returns the current time in Lagos timezone (Africa/Lagos = UTC+1, no DST).
+/// Returns a naive (non-UTC) DateTime so comparisons with _parseTimeOnDay
+/// (which also returns naive local DateTimes) are consistent regardless of
+/// the device's local timezone setting.
 DateTime nowInLagos() {
   final utc = DateTime.now().toUtc();
-  return utc.add(const Duration(hours: 1));
+  final adjusted = utc.add(const Duration(hours: 1));
+  // Strip the UTC flag — both nowInLagos() and _parseTimeOnDay() must be
+  // naive so that isBefore/isAfter comparisons work correctly.
+  return DateTime(adjusted.year, adjusted.month, adjusted.day,
+      adjusted.hour, adjusted.minute, adjusted.second,
+      adjusted.millisecond, adjusted.microsecond);
 }
 
 /// Formats a DateTime as "YYYY-MM-DD".
@@ -120,4 +128,11 @@ DateTime _parseTimeOnDay(String timeStr, DateTime day) {
   final parts = timeStr.split(':');
   return DateTime(day.year, day.month, day.day,
       int.parse(parts[0]), int.parse(parts[1]));
+}
+
+/// Returns the Sunday that starts the week containing [d].
+/// Flutter weekday: 1=Mon … 6=Sat, 7=Sun.  Sunday offset = 0, Mon=1 … Sat=6.
+DateTime startOfWeek(DateTime d) {
+  final offset = d.weekday == 7 ? 0 : d.weekday;
+  return DateTime(d.year, d.month, d.day - offset);
 }

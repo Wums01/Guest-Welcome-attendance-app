@@ -4,7 +4,9 @@ import 'package:go_router/go_router.dart';
 
 import 'core/logger.dart';
 import 'features/auth/profile_picker_screen.dart';
+import 'features/auth/staff_profile_screen.dart';
 import 'features/home/home_screen.dart';
+import 'features/home/celebrations_screen.dart';
 import 'features/members/members_screen.dart';
 import 'features/members/register_member_screen.dart';
 import 'features/members/member_detail_screen.dart';
@@ -123,6 +125,10 @@ GoRouter _buildRouter(Ref ref, ChangeNotifier refreshListenable) {
             path: '/reports',
             builder: (_, __) => const ReportsScreen(),
           ),
+          GoRoute(
+            path: '/celebrations',
+            builder: (_, __) => const CelebrationsScreen(),
+          ),
         ],
       ),
 
@@ -130,6 +136,11 @@ GoRouter _buildRouter(Ref ref, ChangeNotifier refreshListenable) {
       GoRoute(
         path: '/settings',
         builder: (_, __) => const SettingsScreen(),
+      ),
+      // Profile is outside the bottom nav shell
+      GoRoute(
+        path: '/profile',
+        builder: (_, __) => const StaffProfileScreen(),
       ),
     ],
   );

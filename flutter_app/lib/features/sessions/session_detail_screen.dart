@@ -7,6 +7,8 @@
 // "MEMBERS (N)" row, member list with MemberAvatar + TeamBadge + StatusBadge,
 // pinned bottom bar with "Finalize Absences" button.
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -24,6 +26,7 @@ import '../../app_theme/app_theme.dart';
 import '../../widgets/team_badge.dart';
 import '../../widgets/status_badge.dart';
 import '../../widgets/avatar_widget.dart';
+import '../../core/utils/date_utils.dart';
 
 // ---------------------------------------------------------------------------
 // Data class
@@ -85,6 +88,22 @@ class _SessionDetailScreenState
   // 'all' | 'present' | 'absent' | 'excused'
   String _statusFilter = 'all';
   bool _finalizing = false;
+  Timer? _countdownTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    // Refresh countdown display every 10 seconds if service is tooEarly
+    _countdownTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _countdownTimer?.cancel();
+    super.dispose();
+  }
 
   Future<void> _finalizeAbsences(
       Session session, Program? program) async {
@@ -134,6 +153,279 @@ class _SessionDetailScreenState
         n.contains('second') ||
         n.contains('service 3') ||
         n.contains('third');
+  }
+
+  /// Upgrades an absent member to excused after staff confirmation.
+  /// Only callable on absent clock-ins (terminal status guard is in the service).
+  Future<void> _markAsExcused(
+      BuildContext context, _ClockInEntry entry) async {
+    final memberName = entry.member?.fullName ?? entry.clockIn.memberId;
+    final messenger = ScaffoldMessenger.of(context);
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Mark as Excused'),
+        content: Text(
+            'Mark $memberName as excused for this session?\n\nThis cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+                backgroundColor: AppTheme.amber,
+                foregroundColor: Colors.white),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Mark Excused'),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true || !mounted) return;
+
+    try {
+      await ref.read(attendanceServiceProvider).clockInMember(
+            sessionId: widget.sessionId,
+            memberId: entry.clockIn.memberId,
+            status: AttendanceStatus.excused,
+            method: ClockInMethod.manual,
+          );
+      ref.invalidate(_clockInsProvider(widget.sessionId));
+      ref.invalidate(_clockInsWithMembersProvider(widget.sessionId));
+      if (mounted) {
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text('$memberName marked as excused.'),
+            backgroundColor: AppTheme.amber,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: AppTheme.error,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Prompts the user to update the "new guests" count for this session.
+  Future<void> _editNewGuestCount(BuildContext context, Session session) async {
+    final controller = TextEditingController(
+        text: session.newGuestCount.toString());
+    final messenger = ScaffoldMessenger.of(context);
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('New Guests'),
+        content: TextField(
+          controller: controller,
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(
+            labelText: 'New guest count',
+            hintText: 'Enter number of guests',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: AppTheme.primary,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    final raw = controller.text.trim();
+    final value = int.tryParse(raw);
+    if (value == null || value < 0) {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Please enter a valid non-negative number.'),
+          backgroundColor: AppTheme.error,
+        ),
+      );
+      return;
+    }
+
+    try {
+      await ref.read(sessionServiceProvider).updateSession(
+            session.id,
+            newGuestCount: value,
+          );
+      ref.invalidate(_sessionDetailProvider(widget.sessionId));
+      if (mounted) {
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text('New guest count updated to $value.'),
+            backgroundColor: AppTheme.success,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: AppTheme.error,
+          ),
+        );
+      }
+    }
+  }
+
+  // ── Gate State Helpers ────────────────────────────────────────────────
+
+  Widget _buildQRButton(Session session) {
+    final now = nowInLagos();
+    final todayISO = formatDateISO(now);
+    final isToday = session.date == todayISO;
+    
+    if (!isToday) {
+      // Past or future session - disable button
+      return const Tooltip(
+        message: 'Check-in only available on session date',
+        child: IconButton(
+          icon: Icon(Icons.qr_code_scanner),
+          onPressed: null, // disabled
+        ),
+      );
+    }
+
+    final gate = sessionGateState(session.startTime, session.endTime, now);
+    
+    switch (gate) {
+      case SessionGateState.open:
+      case SessionGateState.noGate:
+        // Service is open or has no time gate
+        return IconButton(
+          icon: const Icon(Icons.qr_code_scanner),
+          tooltip: 'Start Check-in',
+          onPressed: () =>
+              context.push('/sessions/${widget.sessionId}/checkin'),
+        );
+      case SessionGateState.tooEarly:
+        final ms = msUntilTime(session.startTime!, now);
+        final countdown = msToCountdown(ms);
+        return Tooltip(
+          message: countdown,
+          child: const IconButton(
+            icon: Icon(Icons.qr_code_scanner),
+            onPressed: null, // disabled - service not open yet
+          ),
+        );
+      case SessionGateState.closed:
+        return const Tooltip(
+          message: 'Check-in is closed',
+          child: IconButton(
+            icon: Icon(Icons.qr_code_scanner),
+            onPressed: null, // disabled - service is closed
+          ),
+        );
+    }
+  }
+
+  Widget _buildGateBanner(Session session) {
+    final now = nowInLagos();
+    final todayISO = formatDateISO(now);
+    final isToday = session.date == todayISO;
+
+    if (!isToday || session.startTime == null) {
+      return const SizedBox.shrink(); // No banner needed
+    }
+
+    final gate = sessionGateState(session.startTime, session.endTime, now);
+
+    switch (gate) {
+      case SessionGateState.open:
+      case SessionGateState.noGate:
+        return const SizedBox.shrink(); // No banner when open
+      case SessionGateState.tooEarly:
+        final ms = msUntilTime(session.startTime!, now);
+        final countdown = msToCountdown(ms);
+        return Container(
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: AppTheme.amberBg,
+            border: Border.all(color: AppTheme.amber),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.schedule, size: 18, color: AppTheme.amber),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Service Not Open Yet',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
+                        color: AppTheme.amber,
+                      ),
+                    ),
+                    Text(
+                      countdown,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppTheme.amber,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      case SessionGateState.closed:
+        return Container(
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.all(12),
+          decoration: const BoxDecoration(
+            color: AppTheme.errorBg,
+            border: Border(
+              top: BorderSide(color: AppTheme.error),
+              bottom: BorderSide(color: AppTheme.error),
+              left: BorderSide(color: AppTheme.error),
+              right: BorderSide(color: AppTheme.error),
+            ),
+            borderRadius: BorderRadius.all(Radius.circular(8)),
+          ),
+          child: const Row(
+            children: [
+              Icon(Icons.lock, size: 18, color: AppTheme.error),
+              SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Check-in is now closed',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                    color: AppTheme.error,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+    }
   }
 
   @override
@@ -259,17 +551,15 @@ class _SessionDetailScreenState
           ],
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.qr_code_scanner),
-            tooltip: 'Start Check-in',
-            onPressed: () =>
-                context.push('/sessions/${widget.sessionId}/checkin'),
-          ),
+          _buildQRButton(session),
         ],
       ),
       body: SafeArea(
         child: Column(
           children: [
+            // ── Service Gate Status (countdown or closed) ─────
+            _buildGateBanner(session),
+
             // ── 3 Stat cards ───────────────────────────────────────────
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
@@ -304,7 +594,31 @@ class _SessionDetailScreenState
                 ],
               ),
             ),
-            const SizedBox(height: 12),
+
+            // ── New guest count (editable) ──────────────────────────────
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'New guests: ${session.newGuestCount}',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: AppTheme.slate500,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.edit, size: 20),
+                    tooltip: 'Edit new guest count',
+                    onPressed: () => _editNewGuestCount(context, session),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
 
             // ── Filter chips ───────────────────────────────────────────
             SingleChildScrollView(
@@ -389,7 +703,13 @@ class _SessionDetailScreenState
                             final clockIn = entry.clockIn;
                             final timeStr =
                                 '${clockIn.clockedAt.hour.toString().padLeft(2, '0')}:${clockIn.clockedAt.minute.toString().padLeft(2, '0')}';
-                            return Container(
+                            final isAbsent =
+                                clockIn.status == AttendanceStatus.absent;
+                            return GestureDetector(
+                              onLongPress: isAbsent
+                                  ? () => _markAsExcused(ctx, entry)
+                                  : null,
+                              child: Container(
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 12, vertical: 12),
                               decoration: BoxDecoration(
@@ -425,6 +745,16 @@ class _SessionDetailScreenState
                                         if (member != null)
                                           TeamBadge(
                                               team: member.team),
+                                        if (isAbsent) ...[
+                                          const SizedBox(height: 4),
+                                          const Text(
+                                            'Hold to excuse',
+                                            style: TextStyle(
+                                              fontSize: 10,
+                                              color: AppTheme.amber,
+                                            ),
+                                          ),
+                                        ],
                                       ],
                                     ),
                                   ),
@@ -437,6 +767,7 @@ class _SessionDetailScreenState
                                   ),
                                 ],
                               ),
+                            ),
                             );
                           },
                         ),

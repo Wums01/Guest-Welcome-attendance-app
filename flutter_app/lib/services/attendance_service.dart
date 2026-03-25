@@ -15,12 +15,15 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:uuid/uuid.dart';
 
 import '../models/clock_in.dart';
 import '../models/member.dart';
 import '../models/enums.dart';
 import '../core/logger.dart';
 import 'member_service.dart';
+import 'offline_sync_service.dart';
 
 // ---------------------------------------------------------------------------
 // Provider
@@ -282,8 +285,10 @@ class AttendanceService {
     }
   }
 
-  /// Returns members who have zero `present` clock-ins across all Sunday sessions
-  /// since [sinceDate] (format: "YYYY-MM-DD").
+  /// Returns members who have zero `present` OR `excused` clock-ins across all
+  /// Sunday sessions since [sinceDate] (format: "YYYY-MM-DD").
+  /// Excused members are excluded because they are accounted for; only truly
+  /// unaccounted absences trigger follow-up.
   /// Used for the "follow-up needed" section on the home screen.
   Future<List<Member>> getAbsentMembersSince(String sinceDate) async {
     AppLogger.info(_tag, 'getAbsentMembersSince($sinceDate)');
@@ -306,21 +311,22 @@ class AttendanceService {
       // Get all members
       final allMembers = await _memberService.getMembers();
 
-      // Get member IDs who have at least one `present` clock-in in those sessions
+      // Get member IDs who have at least one `present` or `excused` clock-in.
+      // Excused members are accounted for and should not appear in follow-up.
       final clockInsData = await _client
           .from('clock_ins')
           .select('member_id')
           .inFilter('session_id', sessionIds)
-          .eq('status', 'present');
-      final presentMemberIds = (clockInsData as List)
+          .inFilter('status', ['present', 'excused']);
+      final accountedMemberIds = (clockInsData as List)
           .map((c) => c['member_id'] as String)
           .toSet();
 
-      // Members with no `present` record in those sessions
+      // Members with no present/excused record in those sessions
       final absent = allMembers
-          .where((m) => m.team != Team.none && !presentMemberIds.contains(m.id))
+          .where((m) => m.team != Team.none && !accountedMemberIds.contains(m.id))
           .toList();
-      AppLogger.info(_tag, 'getAbsentMembersSince → ${absent.length} absent members');
+      AppLogger.info(_tag, 'getAbsentMembersSince → ${absent.length} unaccounted members');
       return absent;
     } catch (e, s) {
       AppLogger.error(_tag, 'getAbsentMembersSince($sinceDate) failed', e, s);
@@ -374,4 +380,77 @@ class AttendanceService {
     if (n.contains('service 3') || n.contains('third')) return Team.teamC;
     return null;
   }
+
+  // ── Offline Support ───────────────────────────────────────────────────────────
+
+  /// Clock in by offline code with offline fallback support.
+  /// If offline, saves to local database and syncs when connection restored.
+  Future<ClockIn> clockInByOfflineCodeWithOfflineSupport({
+    required String sessionId,
+    required String code,
+    required OfflineSyncService offlineService,
+    AttendanceStatus status = AttendanceStatus.present,
+  }) async {
+    AppLogger.info(
+      _tag,
+      'clockInByOfflineCodeWithOfflineSupport(session=$sessionId, code=$code)',
+    );
+
+    // Check connectivity
+    final connectivity = await _isOnline();
+
+    if (!connectivity) {
+      // Offline: save locally and return a pending record
+      AppLogger.warn(_tag, 'Offline — saving attendance locally');
+      try {
+        final member = await _memberService.getMemberByOfflineCode(code);
+        if (member == null) {
+          throw Exception('Member not found');
+        }
+
+        final now = DateTime.now();
+        final id = const Uuid().v4();
+        await offlineService.addPendingClockIn(
+          id: id,
+          sessionId: sessionId,
+          memberId: member.id,
+          status: status,
+          method: ClockInMethod.offlineCode,
+          clockedAt: now,
+        );
+
+        // Return a pending clock-in record locally
+        return ClockIn(
+          id: id,
+          sessionId: sessionId,
+          memberId: member.id,
+          status: status,
+          method: ClockInMethod.offlineCode,
+          clockedAt: now,
+        );
+      } catch (e) {
+        AppLogger.error(_tag, 'Offline save failed: $e', e, null);
+        rethrow;
+      }
+    }
+
+    // Online: use normal flow
+    return clockInByOfflineCode(
+      sessionId: sessionId,
+      code: code,
+      status: status,
+    );
+  }
+
+  /// Check online status
+  Future<bool> _isOnline() async {
+    try {
+      final connectivity = await Connectivity().checkConnectivity();
+      return !connectivity.contains(ConnectivityResult.none);
+    } catch (e) {
+      AppLogger.warn(_tag, 'Connectivity check failed: $e');
+      return true; // Assume online on error
+    }
+  }
 }
+

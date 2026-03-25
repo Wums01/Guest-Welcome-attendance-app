@@ -73,6 +73,32 @@ class AuthService {
     }
   }
 
+  Future<StaffUser> updateStaffUser(
+    String id, {
+    String? fullName,
+    String? avatarUrl,
+  }) async {
+    AppLogger.info(_tag, 'Updating staff user: $id');
+    try {
+      final patch = <String, dynamic>{};
+      if (fullName != null) patch['full_name'] = fullName.trim();
+      if (avatarUrl != null) patch['avatar_url'] = avatarUrl;
+      if (patch.isEmpty) {
+        final existing = await getStaffUsers();
+        return existing.firstWhere((u) => u.id == id);
+      }
+      final rows = await _client
+          .from('staff_users')
+          .update(patch)
+          .eq('id', id)
+          .select('id, full_name, team, role, avatar_url, password_hash');
+      return StaffUser.fromJson((rows as List).first);
+    } catch (e, st) {
+      AppLogger.error(_tag, 'Failed to update staff user: $id', e, st);
+      rethrow;
+    }
+  }
+
   // -------------------------------------------------------------------------
   // Password management (via pgcrypto RPCs)
   // -------------------------------------------------------------------------

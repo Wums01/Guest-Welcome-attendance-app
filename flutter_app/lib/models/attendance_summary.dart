@@ -10,6 +10,7 @@ class AttendanceSummary {
     required this.sessionDate,
     required this.programId,
     required this.programTitle,
+    required this.newGuestCount,
     required this.presentCount,
     required this.absentCount,
     required this.excusedCount,
@@ -21,6 +22,7 @@ class AttendanceSummary {
   final String sessionDate;
   final String programId;
   final String programTitle;
+  final int newGuestCount;
   final int presentCount;
   final int absentCount;
   final int excusedCount;
@@ -32,8 +34,7 @@ class AttendanceSummary {
       sessionName: json['session_name'] as String,
       sessionDate: json['session_date'] as String,
       programId: json['program_id'] as String,
-      programTitle: json['program_title'] as String,
-      presentCount: (json['present_count'] as num?)?.toInt() ?? 0,
+      programTitle: json['program_title'] as String,      newGuestCount: (json['new_guest_count'] as num?)?.toInt() ?? 0,      presentCount: (json['present_count'] as num?)?.toInt() ?? 0,
       absentCount: (json['absent_count'] as num?)?.toInt() ?? 0,
       excusedCount: (json['excused_count'] as num?)?.toInt() ?? 0,
       totalMarked: (json['total_marked'] as num?)?.toInt() ?? 0,

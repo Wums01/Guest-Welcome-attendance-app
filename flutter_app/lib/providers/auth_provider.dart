@@ -50,4 +50,15 @@ class AuthNotifier extends StateNotifier<AsyncValue<StaffUser?>> {
     await _service.clearSession();
     state = const AsyncValue.data(null);
   }
+
+  /// Re-fetch the current user from DB and update state.
+  /// Call after updating avatar or full name to propagate changes app-wide.
+  Future<void> refreshCurrentUser() async {
+    try {
+      final user = await _service.getCurrentUser();
+      state = AsyncValue.data(user);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
+  }
 }

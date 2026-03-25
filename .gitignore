@@ -42,3 +42,20 @@ next-env.d.ts
 
 # Ignore any file or directory containing 'claude' (case-insensitive)
 *[Cc][Ll][Aa][Uu][Dd][Ee]*
+
+# Documentation and tracking files that shouldn't be committed
+*_IMPLEMENTATION.md
+*_REQUIREMENTS*.md
+*_SETUP.md
+COMPLETE_*.md
+OFFLINE_*.md
+
+# Utility and analysis scripts
+run_*.sh
+run_*.py
+tmp_*.py
+write_*.py
+push_*.sh
+
+# Task management files
+tasks/todo.md

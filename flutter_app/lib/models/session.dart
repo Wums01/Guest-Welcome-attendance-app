@@ -21,6 +21,7 @@ class Session {
     this.startTime,
     this.endTime,
     required this.clockInRequired,
+    required this.newGuestCount,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -37,6 +38,7 @@ class Session {
   final String? endTime;
 
   final bool clockInRequired;
+  final int newGuestCount;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -51,6 +53,7 @@ class Session {
       startTime: json['start_time'] as String?,
       endTime: json['end_time'] as String?,
       clockInRequired: json['clock_in_required'] as bool? ?? true,
+      newGuestCount: (json['new_guest_count'] as num?)?.toInt() ?? 0,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
     );
@@ -64,7 +67,7 @@ class Session {
         'start_time': startTime,
         'end_time': endTime,
         'clock_in_required': clockInRequired,
-        'created_at': createdAt.toIso8601String(),
+      'new_guest_count': newGuestCount,
         'updated_at': updatedAt.toIso8601String(),
       };
 
@@ -75,5 +78,6 @@ class Session {
         'start_time': startTime,
         'end_time': endTime,
         'clock_in_required': clockInRequired,
+        'new_guest_count': newGuestCount,
       };
 }

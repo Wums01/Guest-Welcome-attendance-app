@@ -8,6 +8,7 @@ import '../../services/member_service.dart';
 import '../../app_theme/app_theme.dart';
 import '../../widgets/avatar_widget.dart';
 import '../../widgets/team_badge.dart';
+import '../../core/utils/date_utils.dart';
 
 // ── Provider ──────────────────────────────────────────────────────────────────
 
@@ -35,6 +36,37 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
     super.dispose();
   }
 
+  void _showMenuSheet() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (_) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 8),
+            ListTile(
+              leading: const Icon(Icons.settings_outlined),
+              title: const Text('Settings'),
+              onTap: () {
+                Navigator.of(context).pop();
+                context.push('/settings');
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.close),
+              title: const Text('Cancel'),
+              onTap: () => Navigator.of(context).pop(),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
   List<Member> _filter(List<Member> members) {
     var result = members;
     if (_teamFilter != null) {
@@ -60,36 +92,61 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.menu, size: 22),
-          onPressed: () => context.push('/settings'),
+          onPressed: _showMenuSheet,
         ),
         title: const Text('Members'),
         actions: [
-          GestureDetector(
-            onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Notifications coming soon'),
-                duration: Duration(seconds: 2),
-              ),
-            ),
-            child: Stack(
-              children: [
-                const Padding(
-                  padding: EdgeInsets.all(8),
-                  child: Icon(Icons.notifications_outlined),
-                ),
-                Positioned(
-                  top: 10,
-                  right: 10,
-                  child: Container(
-                    width: 7,
-                    height: 7,
-                    decoration: const BoxDecoration(
-                      color: AppTheme.primary,
-                      shape: BoxShape.circle,
-                    ),
+          // Bell with birthday count badge
+          membersAsync.maybeWhen(
+            data: (members) {
+              final todayMMDD = formatMMDD(nowInLagos());
+              final count = members
+                  .where((m) =>
+                      m.birthdayMD == todayMMDD ||
+                      m.anniversaryMD == todayMMDD)
+                  .length;
+              return GestureDetector(
+                onTap: () => context.push('/celebrations'),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      const Padding(
+                        padding: EdgeInsets.all(8),
+                        child: Icon(Icons.notifications_outlined),
+                      ),
+                      if (count > 0)
+                        Positioned(
+                          top: 6,
+                          right: 6,
+                          child: Container(
+                            width: 16,
+                            height: 16,
+                            decoration: const BoxDecoration(
+                              color: AppTheme.error,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Center(
+                              child: Text(
+                                count > 9 ? '9+' : '$count',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                 ),
-              ],
+              );
+            },
+            orElse: () => IconButton(
+              icon: const Icon(Icons.notifications_outlined),
+              onPressed: () => context.push('/celebrations'),
             ),
           ),
           const SizedBox(width: 8),

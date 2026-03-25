@@ -67,60 +67,69 @@ class ProfilePickerScreen extends ConsumerWidget {
 
           // ── UI ──────────────────────────────────────────────────────────
           SafeArea(
-            child: Column(
-              children: [
-                const Spacer(),
-
-                // Heading
-                const Text(
-                  'Choose Your Profile',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.2,
-                  ),
-                ),
-                const SizedBox(height: 20),
-
-                // Grid
-                staffAsync.when(
-                  loading: () => const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 32),
-                    child: CircularProgressIndicator(color: Colors.white54),
-                  ),
-                  error: (e, _) => Padding(
-                    padding: const EdgeInsets.symmetric(
-                        vertical: 32, horizontal: 32),
-                    child: Text(
-                      'Could not load team leads.\n$e',
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                          color: Colors.white54, fontSize: 13),
-                    ),
-                  ),
-                  data: (staff) =>
-                      _buildGrid(context, ref, staff, loggedInUser),
-                ),
-
-                // Sign out — only when someone is active
-                if (loggedInUser != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: TextButton(
-                      onPressed: () =>
-                          _confirmSignOut(context, ref, loggedInUser),
-                      child: Text(
-                        'Sign out ${loggedInUser.fullName.split(' ').first}',
-                        style: const TextStyle(
-                            color: Colors.white38, fontSize: 13),
+            child: LayoutBuilder(
+              builder: (ctx, constraints) => SingleChildScrollView(
+                child: ConstrainedBox(
+                  constraints:
+                      BoxConstraints(minHeight: constraints.maxHeight),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Heading
+                      const Text(
+                        'Choose Your Profile',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.2,
+                        ),
                       ),
-                    ),
-                  ),
+                      const SizedBox(height: 20),
 
-                const SizedBox(height: 24),
-              ],
+                      // Grid
+                      staffAsync.when(
+                        loading: () => const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 32),
+                          child: CircularProgressIndicator(
+                              color: Colors.white54),
+                        ),
+                        error: (e, _) => Padding(
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 32, horizontal: 32),
+                          child: Text(
+                            'Could not load team leads.\n$e',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                                color: Colors.white54, fontSize: 13),
+                          ),
+                        ),
+                        data: (staff) =>
+                            _buildGrid(context, ref, staff, loggedInUser),
+                      ),
+
+                      // Sign out — only when someone is active
+                      if (loggedInUser != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: TextButton(
+                            onPressed: () =>
+                                _confirmSignOut(context, ref, loggedInUser),
+                            child: Text(
+                              'Sign out ${loggedInUser.fullName.split(' ').first}',
+                              style: const TextStyle(
+                                  color: Colors.white38, fontSize: 13),
+                            ),
+                          ),
+                        ),
+
+                      const SizedBox(height: 24),
+                    ],
+                  ),
+                ),
+              ),
             ),
           ),
         ],
@@ -278,13 +287,12 @@ class _ProfileTile extends StatelessWidget {
           AspectRatio(
             aspectRatio: 1,
             child: Container(
+              clipBehavior: Clip.antiAlias,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
                 border: isActive
                     ? Border.all(color: AppTheme.primary, width: 3)
-                    : Border.all(
-                        color: Colors.white.withValues(alpha: 0.08),
-                        width: 1),
+                    : null,
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.5),
@@ -293,17 +301,15 @@ class _ProfileTile extends StatelessWidget {
                   ),
                 ],
               ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(isActive ? 9 : 11),
-                child: user.avatarUrl != null &&
-                        user.avatarUrl!.isNotEmpty
-                    ? Image.network(
-                        user.avatarUrl!,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => _initialsBox(),
-                      )
-                    : _initialsBox(),
-              ),
+              child: user.avatarUrl != null && user.avatarUrl!.isNotEmpty
+                  ? Image.network(
+                      user.avatarUrl!,
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      height: double.infinity,
+                      errorBuilder: (_, __, ___) => _initialsBox(),
+                    )
+                  : _initialsBox(),
             ),
           ),
           const SizedBox(height: 8),
@@ -393,6 +399,7 @@ class _AssistantGroupTile extends StatelessWidget {
           AspectRatio(
             aspectRatio: 1,
             child: Container(
+              clipBehavior: Clip.antiAlias,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
                 gradient: const LinearGradient(
@@ -402,9 +409,7 @@ class _AssistantGroupTile extends StatelessWidget {
                 ),
                 border: _hasActive
                     ? Border.all(color: AppTheme.primary, width: 3)
-                    : Border.all(
-                        color: Colors.white.withValues(alpha: 0.12),
-                        width: 1),
+                    : null,
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.5),
@@ -413,18 +418,17 @@ class _AssistantGroupTile extends StatelessWidget {
                   ),
                 ],
               ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(_hasActive ? 9 : 11),
-                child: _hasActive &&
-                        _activeAssistant?.avatarUrl != null &&
-                        _activeAssistant!.avatarUrl!.isNotEmpty
-                    ? Image.network(
-                        _activeAssistant!.avatarUrl!,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => _icon(),
-                      )
-                    : _icon(),
-              ),
+              child: _hasActive &&
+                      _activeAssistant?.avatarUrl != null &&
+                      _activeAssistant!.avatarUrl!.isNotEmpty
+                  ? Image.network(
+                      _activeAssistant!.avatarUrl!,
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      height: double.infinity,
+                      errorBuilder: (_, __, ___) => _icon(),
+                    )
+                  : _icon(),
             ),
           ),
           const SizedBox(height: 8),

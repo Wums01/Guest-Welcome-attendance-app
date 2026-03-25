@@ -44,9 +44,20 @@ class _CheckinGateScreenState extends ConsumerState<CheckinGateScreen> {
   final MobileScannerController _controller = MobileScannerController();
   bool _torchOn = false;
   bool _processing = false;
+  Timer? _gateRefreshTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    // Re-evaluate gate state every 30 s so TooEarly → Open transition is automatic
+    _gateRefreshTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      ref.invalidate(_sessionDetailProvider(widget.sessionId));
+    });
+  }
 
   @override
   void dispose() {
+    _gateRefreshTimer?.cancel();
     _controller.dispose();
     super.dispose();
   }
@@ -58,6 +69,33 @@ class _CheckinGateScreenState extends ConsumerState<CheckinGateScreen> {
 
     final code = raw.trim();
     if (!RegExp(r'^\d{6}$').hasMatch(code)) return;
+
+    // Re-check gate state immediately before processing.
+    // The visual gate auto-refreshes every 30 s, but the user could scan
+    // in the final seconds before close.
+    final testMode =
+        ref.read(_testModeProvider).valueOrNull ?? false;
+    if (!testMode) {
+      final session = ref
+          .read(_sessionDetailProvider(widget.sessionId))
+          .valueOrNull;
+      if (session != null && session.startTime != null) {
+        final gate = sessionGateState(
+            session.startTime, session.endTime, nowInLagos());
+        if (gate == SessionGateState.closed) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                    'Session is closed. Check-in is no longer available.'),
+                backgroundColor: AppTheme.error,
+              ),
+            );
+          }
+          return;
+        }
+      }
+    }
 
     setState(() => _processing = true);
     try {

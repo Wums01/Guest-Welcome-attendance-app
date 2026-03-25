@@ -10,6 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/attendance_summary.dart';
+import '../models/attendance_export_entry.dart';
 import '../models/leaderboard_entry.dart';
 import '../core/logger.dart';
 
@@ -120,6 +121,157 @@ class ReportService {
       return entries;
     } catch (e, stack) {
       AppLogger.error(_tag, 'getYearlyLeaderboard($year) failed', e, stack);
+      rethrow;
+    }
+  }
+
+  // ── Sessions by date range ────────────────────────────────────────────────
+
+  /// Returns AttendanceSummary for all sessions between [startDate] and
+  /// [endDate] inclusive.  Format: "YYYY-MM-DD".
+  Future<List<AttendanceSummary>> getSessionsByDateRange(
+      String startDate, String endDate) async {
+    AppLogger.info(_tag, 'getSessionsByDateRange($startDate → $endDate)');
+    try {
+      final data = await _client
+          .from('session_attendance_summary')
+          .select()
+          .gte('session_date', startDate)
+          .lte('session_date', endDate)
+          .order('session_date')
+          .order('session_name');
+      final summaries = (data as List)
+          .map((e) => AttendanceSummary.fromJson(e))
+          .toList();
+      AppLogger.info(
+          _tag, 'getSessionsByDateRange → ${summaries.length} summaries');
+      return summaries;
+    } catch (e, stack) {
+      AppLogger.error(
+          _tag,
+          'getSessionsByDateRange($startDate → $endDate) failed',
+          e,
+          stack);
+      rethrow;
+    }
+  }
+
+  /// Returns the total manually-entered guest count for a month.
+  /// [yearMonth] format: "YYYY-MM".
+  Future<int> getMonthlyGuestTotal(String yearMonth) async {
+    AppLogger.info(_tag, 'getMonthlyGuestTotal($yearMonth)');
+    try {
+      final data = await _client
+          .from('sessions')
+          .select('new_guest_count')
+          .like('date', '$yearMonth%');
+
+      final total = (data as List).fold<int>(
+        0,
+        (sum, row) => sum + ((row['new_guest_count'] as num?)?.toInt() ?? 0),
+      );
+      AppLogger.info(_tag, 'getMonthlyGuestTotal($yearMonth) → $total guests');
+      return total;
+    } catch (e, stack) {
+      AppLogger.error(_tag, 'getMonthlyGuestTotal($yearMonth) failed', e, stack);
+      rethrow;
+    }
+  }
+
+  /// Returns raw attendance rows for all sessions on a date.
+  /// Used for workbook export where each session gets its own sheet.
+  Future<List<AttendanceExportEntry>> getAttendanceExportRows(String date) async {
+    AppLogger.info(_tag, 'getAttendanceExportRows($date)');
+    try {
+      final sessions = await _client
+          .from('sessions')
+          .select('id')
+          .eq('date', date)
+          .order('name');
+
+      final sessionIds = (sessions as List)
+          .map((row) => row['id'] as String)
+          .toList();
+
+      if (sessionIds.isEmpty) {
+        AppLogger.info(_tag, 'getAttendanceExportRows($date) → 0 rows');
+        return [];
+      }
+
+      final data = await _client
+          .from('clock_ins')
+          .select(
+            'session_id,status,clocked_at,'
+            'members!clock_ins_member_id_fkey(full_name),'
+            'sessions!clock_ins_session_id_fkey(name)',
+          )
+          .inFilter('session_id', sessionIds)
+          .order('session_id')
+          .order('clocked_at');
+
+      final rows = (data as List)
+          .map((row) => AttendanceExportEntry.fromJson(row))
+          .toList();
+      AppLogger.info(_tag, 'getAttendanceExportRows($date) → ${rows.length} rows');
+      return rows;
+    } catch (e, stack) {
+      AppLogger.error(_tag, 'getAttendanceExportRows($date) failed', e, stack);
+      rethrow;
+    }
+  }
+
+  Future<List<AttendanceExportEntry>> getAttendanceExportRowsByDateRange(
+    String startDate,
+    String endDate,
+  ) async {
+    AppLogger.info(_tag, 'getAttendanceExportRowsByDateRange($startDate → $endDate)');
+    try {
+      final sessions = await _client
+          .from('sessions')
+          .select('id')
+          .gte('date', startDate)
+          .lte('date', endDate)
+          .order('date')
+          .order('name');
+
+      final sessionIds = (sessions as List)
+          .map((row) => row['id'] as String)
+          .toList();
+
+      if (sessionIds.isEmpty) {
+        AppLogger.info(
+          _tag,
+          'getAttendanceExportRowsByDateRange($startDate → $endDate) → 0 rows',
+        );
+        return [];
+      }
+
+      final data = await _client
+          .from('clock_ins')
+          .select(
+            'session_id,status,clocked_at,'
+            'members!clock_ins_member_id_fkey(full_name),'
+            'sessions!clock_ins_session_id_fkey(name)',
+          )
+          .inFilter('session_id', sessionIds)
+          .order('session_id')
+          .order('clocked_at');
+
+      final rows = (data as List)
+          .map((row) => AttendanceExportEntry.fromJson(row))
+          .toList();
+      AppLogger.info(
+        _tag,
+        'getAttendanceExportRowsByDateRange($startDate → $endDate) → ${rows.length} rows',
+      );
+      return rows;
+    } catch (e, stack) {
+      AppLogger.error(
+        _tag,
+        'getAttendanceExportRowsByDateRange($startDate → $endDate) failed',
+        e,
+        stack,
+      );
       rethrow;
     }
   }
