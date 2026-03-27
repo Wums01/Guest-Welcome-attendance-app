@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary": "#0f49bd",
+              "background-light": "#f6f6f8",
+              "background-dark": "#101622",
+            },
+            fontFamily: {
+              "display": ["Plus Jakarta Sans"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<title>Programs - Guest Welcome Attendance</title>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 antialiased">
+<!-- Main Container -->
+<div class="relative flex h-screen w-full flex-col overflow-hidden max-w-md mx-auto bg-white dark:bg-slate-900 shadow-xl">
+<!-- Header Section -->
+<header class="pt-6 px-4 pb-2 bg-white dark:bg-slate-900 sticky top-0 z-10">
+<div class="flex items-center justify-between mb-4">
+<div class="flex items-center gap-3">
+<div class="bg-primary/10 text-primary p-2 rounded-lg">
+<span class="material-symbols-outlined block text-2xl">calendar_month</span>
+</div>
+<h1 class="text-2xl font-bold tracking-tight">Programs</h1>
+</div>
+<button class="text-slate-500 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+<!-- Search Bar -->
+<div class="relative group">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 group-focus-within:text-primary transition-colors">
+<span class="material-symbols-outlined text-xl">search</span>
+</div>
+<input class="block w-full pl-10 pr-4 py-3 bg-slate-100 dark:bg-slate-800 border-none rounded-xl focus:ring-2 focus:ring-primary/20 text-sm placeholder:text-slate-500 transition-all" placeholder="Search programs by name..." type="text"/>
+</div>
+</header>
+<!-- Programs List Area -->
+<main class="flex-1 overflow-y-auto px-4 py-4 space-y-3 pb-24">
+<!-- Active Filter Chips (Optional extra for UI polish) -->
+<div class="flex gap-2 pb-2 overflow-x-auto no-scrollbar">
+<span class="px-4 py-1.5 bg-primary text-white text-xs font-semibold rounded-full whitespace-nowrap">All Programs</span>
+<span class="px-4 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-xs font-medium rounded-full whitespace-nowrap">Weekly</span>
+<span class="px-4 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-xs font-medium rounded-full whitespace-nowrap">Monthly</span>
+</div>
+<!-- Program Card 1 -->
+<div class="group bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
+<div class="flex items-start justify-between">
+<div class="flex gap-4">
+<div class="size-12 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center text-orange-600">
+<span class="material-symbols-outlined">wb_sunny</span>
+</div>
+<div>
+<h3 class="font-bold text-slate-900 dark:text-white leading-tight">Sunday Morning Service</h3>
+<div class="flex items-center gap-2 mt-1">
+<span class="text-xs font-medium px-2 py-0.5 bg-primary/10 text-primary rounded-md">Weekly</span>
+<span class="text-xs text-slate-500 dark:text-slate-400">• 48 sessions</span>
+</div>
+</div>
+</div>
+<button class="p-2 text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg transition-colors">
+<span class="material-symbols-outlined text-xl">edit</span>
+</button>
+</div>
+</div>
+<!-- Program Card 2 -->
+<div class="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
+<div class="flex items-start justify-between">
+<div class="flex gap-4">
+<div class="size-12 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600">
+<span class="material-symbols-outlined">menu_book</span>
+</div>
+<div>
+<h3 class="font-bold text-slate-900 dark:text-white leading-tight">Wednesday Bible Study</h3>
+<div class="flex items-center gap-2 mt-1">
+<span class="text-xs font-medium px-2 py-0.5 bg-primary/10 text-primary rounded-md">Weekly</span>
+<span class="text-xs text-slate-500 dark:text-slate-400">• 24 sessions</span>
+</div>
+</div>
+</div>
+<button class="p-2 text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg transition-colors">
+<span class="material-symbols-outlined text-xl">edit</span>
+</button>
+</div>
+</div>
+<!-- Program Card 3 -->
+<div class="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
+<div class="flex items-start justify-between">
+<div class="flex gap-4">
+<div class="size-12 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600">
+<span class="material-symbols-outlined">group</span>
+</div>
+<div>
+<h3 class="font-bold text-slate-900 dark:text-white leading-tight">Youth Fellowship</h3>
+<div class="flex items-center gap-2 mt-1">
+<span class="text-xs font-medium px-2 py-0.5 bg-primary/10 text-primary rounded-md">Bi-weekly</span>
+<span class="text-xs text-slate-500 dark:text-slate-400">• 12 sessions</span>
+</div>
+</div>
+</div>
+<button class="p-2 text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg transition-colors">
+<span class="material-symbols-outlined text-xl">edit</span>
+</button>
+</div>
+</div>
+<!-- Program Card 4 -->
+<div class="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
+<div class="flex items-start justify-between">
+<div class="flex gap-4">
+<div class="size-12 rounded-lg bg-rose-100 dark:bg-rose-900/30 flex items-center justify-center text-rose-600">
+<span class="material-symbols-outlined">celebration</span>
+</div>
+<div>
+<h3 class="font-bold text-slate-900 dark:text-white leading-tight">Annual Christmas Concert</h3>
+<div class="flex items-center gap-2 mt-1">
+<span class="text-xs font-medium px-2 py-0.5 bg-primary/10 text-primary rounded-md">One-off</span>
+<span class="text-xs text-slate-500 dark:text-slate-400">• 1 session</span>
+</div>
+</div>
+</div>
+<button class="p-2 text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg transition-colors">
+<span class="material-symbols-outlined text-xl">edit</span>
+</button>
+</div>
+</div>
+<!-- Program Card 5 -->
+<div class="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow opacity-75">
+<div class="flex items-start justify-between">
+<div class="flex gap-4">
+<div class="size-12 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-300">
+<span class="material-symbols-outlined">nightlight</span>
+</div>
+<div>
+<h3 class="font-bold text-slate-900 dark:text-white leading-tight">Pastoral Workshop</h3>
+<div class="flex items-center gap-2 mt-1">
+<span class="text-xs font-medium px-2 py-0.5 bg-slate-200 dark:bg-slate-600 text-slate-600 dark:text-slate-300 rounded-md">Monthly</span>
+<span class="text-xs text-slate-500 dark:text-slate-400">• 6 sessions</span>
+</div>
+</div>
+</div>
+<button class="p-2 text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg transition-colors">
+<span class="material-symbols-outlined text-xl">edit</span>
+</button>
+</div>
+</div>
+</main>
+<!-- Floating Action Button -->
+<button class="absolute bottom-24 right-6 size-14 bg-primary text-white rounded-full shadow-lg flex items-center justify-center hover:bg-primary/90 active:scale-95 transition-all z-20">
+<span class="material-symbols-outlined text-3xl">add</span>
+</button>
+<!-- Bottom Navigation Bar -->
+<nav class="absolute bottom-0 w-full border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 pb-safe pt-2 px-2 flex justify-between items-center h-20">
+<a class="flex flex-col items-center flex-1 py-1 gap-1 text-slate-400" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="text-[10px] font-semibold">Home</span>
+</a>
+<a class="flex flex-col items-center flex-1 py-1 gap-1 text-slate-400" href="#">
+<span class="material-symbols-outlined">schedule</span>
+<span class="text-[10px] font-semibold">Sessions</span>
+</a>
+<a class="flex flex-col items-center flex-1 py-1 gap-1 text-primary" href="#">
+<span class="material-symbols-outlined fill-1">calendar_month</span>
+<span class="text-[10px] font-bold">Programs</span>
+</a>
+<a class="flex flex-col items-center flex-1 py-1 gap-1 text-slate-400" href="#">
+<span class="material-symbols-outlined">groups</span>
+<span class="text-[10px] font-semibold">Members</span>
+</a>
+<a class="flex flex-col items-center flex-1 py-1 gap-1 text-slate-400" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="text-[10px] font-semibold">Reports</span>
+</a>
+</nav>
+</div>
+</body></html>

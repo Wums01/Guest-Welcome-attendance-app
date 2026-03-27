@@ -1,0 +1,11 @@
+flutter_launcher_icons:
+  image_path: "assets/icon/icon.png"
+  image_path_ios: "assets/icon/icon.png"
+  remove_alpha_ios: true
+  
+  android:
+    notification_icon: "notification_icon"
+    notification_icon_color: "#2196F3"
+    
+  ios:
+    image_type: png

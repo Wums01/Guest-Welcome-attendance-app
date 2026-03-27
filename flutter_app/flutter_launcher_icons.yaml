@@ -1,0 +1,22 @@
+flutter_launcher_icons:
+  image_path: "assets/icon/icon.png"
+  
+  android:
+    notification_icon: "notification_icon"
+    enable: true
+    
+  ios:
+    enable: true
+    remove_alpha_ios: true
+    
+  windows:
+    enable: true
+    
+  macos:
+    enable: true
+    
+  linux:
+    enable: true
+    
+  web:
+    generate: true
