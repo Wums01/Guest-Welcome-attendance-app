@@ -16,6 +16,7 @@ import 'features/sessions/sessions_screen.dart';
 import 'features/sessions/session_detail_screen.dart';
 import 'features/sessions/checkin_gate_screen.dart';
 import 'features/attendance/offline_checkin_screen.dart';
+import 'features/attendance/member_verification_screen.dart';
 import 'features/reports/reports_screen.dart';
 import 'features/settings/settings_screen.dart';
 import 'providers/auth_provider.dart';
@@ -141,6 +142,23 @@ GoRouter _buildRouter(Ref ref, ChangeNotifier refreshListenable) {
       GoRoute(
         path: '/profile',
         builder: (_, __) => const StaffProfileScreen(),
+      ),
+      // Member verification screen (check-in success)
+      GoRoute(
+        path: '/verification',
+        builder: (_, state) {
+          final member = state.extra as Map<String, dynamic>?;
+          if (member == null) {
+            return const Scaffold(
+              body: Center(child: Text('Invalid verification data')),
+            );
+          }
+          return MemberVerificationScreen(
+            member: member['member'],
+            entryTime: member['entryTime'],
+            status: member['status'],
+          );
+        },
       ),
     ],
   );

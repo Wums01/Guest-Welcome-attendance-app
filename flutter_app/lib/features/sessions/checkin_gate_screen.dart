@@ -9,6 +9,7 @@ import 'package:supabase_flutter/supabase_flutter.dart' hide Session;
 import '../../models/enums.dart';
 import '../../models/session.dart';
 import '../../services/attendance_service.dart';
+import '../../services/member_service.dart';
 import '../../services/session_service.dart';
 import '../../app_theme/app_theme.dart';
 import '../../core/utils/date_utils.dart';
@@ -100,24 +101,31 @@ class _CheckinGateScreenState extends ConsumerState<CheckinGateScreen> {
     setState(() => _processing = true);
     try {
       await _controller.stop();
-      await ref.read(attendanceServiceProvider).clockInByOfflineCode(
+      final clockIn =
+          await ref.read(attendanceServiceProvider).clockInByOfflineCode(
             sessionId: widget.sessionId,
             code: code,
             status: AttendanceStatus.present,
           );
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Checked in successfully!'),
-            backgroundColor: AppTheme.success,
-          ),
-        );
-        await Future.delayed(const Duration(seconds: 2));
-        if (mounted) {
-          await _controller.start();
-          setState(() => _processing = false);
-        }
+      final member =
+          await ref.read(memberServiceProvider).getMemberByOfflineCode(code);
+      if (member == null) {
+        throw Exception('Member not found');
       }
+
+      if (!mounted) return;
+      await context.push(
+        '/verification',
+        extra: {
+          'member': member,
+          'entryTime': clockIn.clockedAt,
+          'status': clockIn.status,
+        },
+      );
+
+      if (!mounted) return;
+      await _controller.start();
+      setState(() => _processing = false);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

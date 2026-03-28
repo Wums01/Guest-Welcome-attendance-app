@@ -7,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../models/member.dart';
 import '../../models/session.dart';
+import '../../models/staff_user.dart';
 import '../../services/member_service.dart';
 import '../../services/session_service.dart';
 import '../../core/utils/date_utils.dart';
@@ -58,7 +59,7 @@ final _absentMembersProvider = FutureProvider<List<Member>>((ref) async {
   // Go back 14 days to cover 2 Sundays
   final since = now.subtract(const Duration(days: 14));
   final sinceDate = formatDateISO(since);
-  return ref.read(attendanceServiceProvider).getAbsentMembersSince(sinceDate);
+  return ref.read(attendanceServiceProvider).getActiveAbsentMembersSince(sinceDate);
 });
 
 // Top 3 members by present count this calendar month
@@ -410,7 +411,10 @@ class HomeScreen extends ConsumerWidget {
           Consumer(builder: (ctx, ref, _) {
             final absentAsync = ref.watch(_absentMembersProvider);
             return absentAsync.maybeWhen(
-              data: (members) => _FollowUpSection(members: members),
+              data: (members) => _FollowUpSection(
+                members: members,
+                currentStaff: staff,
+              ),
               orElse: () => const SizedBox.shrink(),
             );
           }),
@@ -772,12 +776,17 @@ class _CelebrationCard extends StatelessWidget {
 
 // ── _FollowUpSection ──────────────────────────────────────────────────────────
 
-class _FollowUpSection extends StatelessWidget {
-  const _FollowUpSection({required this.members});
+class _FollowUpSection extends ConsumerWidget {
+  const _FollowUpSection({
+    required this.members,
+    required this.currentStaff,
+  });
+
   final List<Member> members;
+  final StaffUser? currentStaff;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     if (members.isEmpty) return const SizedBox.shrink();
     return Column(
@@ -842,17 +851,14 @@ class _FollowUpSection extends StatelessWidget {
                       ],
                     ),
                   ),
-                  if (m.phone.isNotEmpty)
+                  if (m.phone.isNotEmpty) ...[
                     GestureDetector(
-                      onTap: () async {
-                        final uri = Uri.parse('tel:${m.phone}');
-                        if (await canLaunchUrl(uri)) {
-                          await launchUrl(uri);
-                        }
-                      },
+                      onTap: () => _handleCall(context, ref, m),
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 6),
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
                         decoration: BoxDecoration(
                           color: AppTheme.error,
                           borderRadius: BorderRadius.circular(8),
@@ -860,12 +866,41 @@ class _FollowUpSection extends StatelessWidget {
                         child: const Text(
                           'Call',
                           style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600),
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                     ),
+                    const SizedBox(width: 8),
+                  ],
+                  GestureDetector(
+                    onTap: () => _confirmMarkContacted(context, ref, m),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? AppTheme.darkSurface
+                            : Colors.white.withValues(alpha: 0.92),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: AppTheme.error.withValues(alpha: 0.28),
+                        ),
+                      ),
+                      child: Text(
+                        'Done',
+                        style: TextStyle(
+                          color: isDark ? Colors.white : AppTheme.error,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             );
@@ -874,6 +909,134 @@ class _FollowUpSection extends StatelessWidget {
         const SizedBox(height: 16),
       ],
     );
+  }
+
+  Future<void> _handleCall(
+    BuildContext context,
+    WidgetRef ref,
+    Member member,
+  ) async {
+    final uri = Uri(scheme: 'tel', path: member.phone);
+    if (!await canLaunchUrl(uri)) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Unable to open the phone dialer on this device.'),
+            backgroundColor: AppTheme.error,
+          ),
+        );
+      }
+      return;
+    }
+
+    await launchUrl(uri);
+    if (!context.mounted) return;
+
+    final shouldDismiss = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Mark follow-up as contacted?'),
+        content: Text(
+          'Remove ${member.fullName} from follow-up for now and log '
+          '${currentStaff?.fullName ?? 'the current staff user'} as the person who dismissed it?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Not yet'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Mark contacted'),
+          ),
+        ],
+      ),
+    );
+
+    if (!context.mounted) return;
+    if (shouldDismiss == true) {
+      await _markContacted(context, ref, member);
+    }
+  }
+
+  Future<void> _confirmMarkContacted(
+    BuildContext context,
+    WidgetRef ref,
+    Member member,
+  ) async {
+    final shouldDismiss = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Dismiss follow-up?'),
+        content: Text(
+          'This removes ${member.fullName} from the follow-up list until they '
+          'attend again. The dismissal will be logged under '
+          '${currentStaff?.fullName ?? 'the current staff user'}.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Dismiss'),
+          ),
+        ],
+      ),
+    );
+
+    if (!context.mounted) return;
+    if (shouldDismiss == true) {
+      await _markContacted(context, ref, member);
+    }
+  }
+
+  Future<void> _markContacted(
+    BuildContext context,
+    WidgetRef ref,
+    Member member,
+  ) async {
+    final staff = currentStaff;
+    if (staff == null) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('You need to be signed in to dismiss follow-up.'),
+            backgroundColor: AppTheme.error,
+          ),
+        );
+      }
+      return;
+    }
+
+    try {
+      await ref.read(attendanceServiceProvider).markFollowUpContacted(
+            memberId: member.id,
+            staffId: staff.id,
+          );
+      ref.invalidate(_absentMembersProvider);
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '${member.fullName} removed from follow-up. Logged under ${staff.fullName}.',
+            ),
+            backgroundColor: AppTheme.success,
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Could not dismiss follow-up: $e'),
+            backgroundColor: AppTheme.error,
+          ),
+        );
+      }
+    }
   }
 }
 

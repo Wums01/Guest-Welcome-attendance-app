@@ -19,6 +19,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:uuid/uuid.dart';
 
 import '../models/clock_in.dart';
+import '../models/follow_up_action.dart';
 import '../models/member.dart';
 import '../models/enums.dart';
 import '../core/logger.dart';
@@ -47,6 +48,7 @@ class AttendanceService {
   final MemberService _memberService;
 
   static const _table = 'clock_ins';
+  static const _followUpActionsTable = 'member_follow_up_actions';
   static const _tag = 'AttendanceService';
 
   // ── Read ──────────────────────────────────────────────────────────────────
@@ -293,15 +295,7 @@ class AttendanceService {
   Future<List<Member>> getAbsentMembersSince(String sinceDate) async {
     AppLogger.info(_tag, 'getAbsentMembersSince($sinceDate)');
     try {
-      // Get all Sunday sessions since sinceDate
-      final sessionsData = await _client
-          .from('sessions')
-          .select('id')
-          .gte('date', sinceDate)
-          .or('name.ilike.%Service 1%,name.ilike.%Service 2%,name.ilike.%Service 3%');
-      final sessionIds = (sessionsData as List)
-          .map((s) => s['id'] as String)
-          .toList();
+      final sessionIds = await _getSundaySessionIds(sinceDate: sinceDate);
 
       if (sessionIds.isEmpty) {
         AppLogger.info(_tag, 'getAbsentMembersSince → no Sunday sessions found since $sinceDate');
@@ -330,6 +324,77 @@ class AttendanceService {
       return absent;
     } catch (e, s) {
       AppLogger.error(_tag, 'getAbsentMembersSince($sinceDate) failed', e, s);
+      rethrow;
+    }
+  }
+
+  /// Returns members who still need follow-up after excluding members whose
+  /// current absence streak has already been marked as contacted by staff.
+  Future<List<Member>> getActiveAbsentMembersSince(String sinceDate) async {
+    AppLogger.info(_tag, 'getActiveAbsentMembersSince($sinceDate)');
+    try {
+      final absentMembers = await getAbsentMembersSince(sinceDate);
+      if (absentMembers.isEmpty) {
+        return [];
+      }
+
+      final latestActions =
+          await _getLatestFollowUpActions(absentMembers.map((m) => m.id).toList());
+      if (latestActions.isEmpty) {
+        AppLogger.info(_tag, 'getActiveAbsentMembersSince → no follow-up actions yet');
+        return absentMembers;
+      }
+
+      final sundaySessionIds = await _getSundaySessionIds();
+      final accountedAfterAction = await _getLatestAccountedSundayClockIns(
+        memberIds: latestActions.keys.toList(),
+        sundaySessionIds: sundaySessionIds,
+      );
+
+      final active = absentMembers.where((member) {
+        final latestAction = latestActions[member.id];
+        if (latestAction == null) return true;
+
+        final latestAttendance = accountedAfterAction[member.id];
+        if (latestAttendance == null) {
+          return false;
+        }
+
+        return latestAttendance.isAfter(latestAction.createdAt);
+      }).toList();
+
+      AppLogger.info(
+        _tag,
+        'getActiveAbsentMembersSince → ${active.length} active follow-up members',
+      );
+      return active;
+    } catch (e, s) {
+      AppLogger.error(_tag, 'getActiveAbsentMembersSince($sinceDate) failed', e, s);
+      rethrow;
+    }
+  }
+
+  /// Records that staff contacted a member and dismissed the current follow-up.
+  /// The member stays hidden until they attend a Sunday session again.
+  Future<void> markFollowUpContacted({
+    required String memberId,
+    required String staffId,
+    String? note,
+  }) async {
+    AppLogger.info(
+      _tag,
+      'markFollowUpContacted(member=$memberId, staff=$staffId)',
+    );
+    try {
+      await _client.from(_followUpActionsTable).insert({
+        'member_id': memberId,
+        'action': 'contacted',
+        'created_by_staff_id': staffId,
+        if (note != null && note.trim().isNotEmpty) 'note': note.trim(),
+      });
+      AppLogger.info(_tag, 'markFollowUpContacted → action saved');
+    } catch (e, s) {
+      AppLogger.error(_tag, 'markFollowUpContacted failed', e, s);
       rethrow;
     }
   }
@@ -379,6 +444,63 @@ class AttendanceService {
     if (n.contains('service 2') || n.contains('second')) return Team.teamB;
     if (n.contains('service 3') || n.contains('third')) return Team.teamC;
     return null;
+  }
+
+  Future<List<String>> _getSundaySessionIds({String? sinceDate}) async {
+    final query = _client
+        .from('sessions')
+        .select('id')
+        .or('name.ilike.%Service 1%,name.ilike.%Service 2%,name.ilike.%Service 3%');
+
+    final data = sinceDate == null ? await query : await query.gte('date', sinceDate);
+    return (data as List).map((s) => s['id'] as String).toList();
+  }
+
+  Future<Map<String, FollowUpAction>> _getLatestFollowUpActions(
+    List<String> memberIds,
+  ) async {
+    if (memberIds.isEmpty) return <String, FollowUpAction>{};
+
+    final data = await _client
+        .from(_followUpActionsTable)
+        .select()
+        .inFilter('member_id', memberIds)
+        .order('created_at', ascending: false);
+
+    final latest = <String, FollowUpAction>{};
+    for (final row in data as List) {
+      final action = FollowUpAction.fromJson(row as Map<String, dynamic>);
+      latest.putIfAbsent(action.memberId, () => action);
+    }
+    return latest;
+  }
+
+  Future<Map<String, DateTime>> _getLatestAccountedSundayClockIns({
+    required List<String> memberIds,
+    required List<String> sundaySessionIds,
+  }) async {
+    if (memberIds.isEmpty || sundaySessionIds.isEmpty) {
+      return <String, DateTime>{};
+    }
+
+    final data = await _client
+        .from(_table)
+        .select('member_id, clocked_at')
+        .inFilter('member_id', memberIds)
+        .inFilter('session_id', sundaySessionIds)
+        .inFilter('status', ['present', 'excused'])
+        .order('clocked_at', ascending: false);
+
+    final latest = <String, DateTime>{};
+    for (final row in data as List) {
+      final map = row as Map<String, dynamic>;
+      final memberId = map['member_id'] as String;
+      latest.putIfAbsent(
+        memberId,
+        () => DateTime.parse(map['clocked_at'] as String),
+      );
+    }
+    return latest;
   }
 
   // ── Offline Support ───────────────────────────────────────────────────────────
