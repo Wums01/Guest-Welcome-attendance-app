@@ -166,7 +166,7 @@ class MemberService {
       if (photoUrl != null) patch['photo_url'] = photoUrl;
       if (patch.isEmpty) {
         final existing = await getMemberById(id);
-        if (existing == null) throw Exception('Member not found');
+        if (existing == null) throw Exception('The member could not be found. Please check and try again.');
         return existing;
       }
       final data = await _client
@@ -206,6 +206,6 @@ class MemberService {
     }
     AppLogger.error(_tag, '_generateUniqueCode → exhausted 30 attempts');
     throw Exception(
-        'Could not generate a unique offline code after 30 attempts. Try again.');
+        'Unable to generate a code. Please try again.');
   }
 }

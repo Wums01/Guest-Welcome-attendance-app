@@ -195,8 +195,8 @@ class _StaffManagementCard extends ConsumerWidget {
                   width: 24,
                   child: CircularProgressIndicator(strokeWidth: 2)),
             ),
-            error: (e, _) => Text('Error: $e',
-                style: const TextStyle(
+            error: (e, _) => const Text('Unable to load team leads. Please try again.',
+                style: TextStyle(
                     fontSize: 12, color: AppTheme.error)),
             data: (staff) {
               if (staff.isEmpty) {

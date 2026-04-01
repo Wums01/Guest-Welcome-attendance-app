@@ -313,15 +313,17 @@ class _ProfileTile extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          Text(
-            user.fullName,
-            textAlign: TextAlign.center,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: isActive ? Colors.white : Colors.white70,
-              fontSize: 12,
-              fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+          Flexible(
+            child: Text(
+              user.fullName,
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: isActive ? Colors.white : Colors.white70,
+                fontSize: 12,
+                fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+              ),
             ),
           ),
           if (isActive)

@@ -217,7 +217,7 @@ class _OfflineCheckinScreenState
         child: sessionAsync.when(
           loading: () =>
               const Center(child: CircularProgressIndicator()),
-          error: (e, _) => Center(child: Text('Error: $e')),
+          error: (e, _) => const Center(child: Text('Unable to load. Please try again.')),
           data: (session) {
             if (session == null) {
               return Center(

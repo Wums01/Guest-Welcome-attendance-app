@@ -1037,7 +1037,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
                   padding: EdgeInsets.all(32),
                   child: Center(child: CircularProgressIndicator()))),
           error: (e, _) =>
-              SliverToBoxAdapter(child: Center(child: Text('Error: $e'))),
+              const SliverToBoxAdapter(child: Center(child: Text('Unable to load reports. Please try again.'))),
           data: (all) {
             final entries = _teamFiltered(all);
             if (entries.isEmpty) {
@@ -1195,7 +1195,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
                   padding: EdgeInsets.all(32),
                   child: Center(child: CircularProgressIndicator()))),
           error: (e, _) =>
-              SliverToBoxAdapter(child: Center(child: Text('Error: $e'))),
+              const SliverToBoxAdapter(child: Center(child: Text('Unable to load leaderboard. Please try again.'))),
           data: (entries) {
             if (entries.isEmpty) {
               return const SliverToBoxAdapter(

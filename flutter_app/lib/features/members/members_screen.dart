@@ -246,7 +246,7 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
                 loading: () =>
                     const Center(child: CircularProgressIndicator()),
                 error: (e, _) =>
-                    Center(child: Text('Error: $e')),
+                    const Center(child: Text('Unable to load members. Please try again.')),
                 data: (members) {
                   final filtered = _filter(members);
                   if (filtered.isEmpty) {
@@ -434,8 +434,8 @@ class _MemberCard extends ConsumerWidget {
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
+          const SnackBar(
+            content: Text('Unable to delete member. Please try again.'),
             backgroundColor: AppTheme.error,
           ),
         );

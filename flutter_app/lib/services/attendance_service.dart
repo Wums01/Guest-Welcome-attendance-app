@@ -191,13 +191,13 @@ class AttendanceService {
     if (status == AttendanceStatus.absent) {
       AppLogger.warn(_tag, 'clockInByOfflineCode → rejected: absent status via code');
       throw Exception(
-          "Invalid status: 'absent' cannot be set via offline code.");
+          "This status cannot be used with the offline code.");
     }
 
     final member = await _memberService.getMemberByOfflineCode(code);
     if (member == null) {
       AppLogger.warn(_tag, 'clockInByOfflineCode → member not found for code $code');
-      throw Exception('Member not found');
+      throw Exception('The code entered does not match any member. Please check and try again.');
     }
 
     AppLogger.info(_tag, 'clockInByOfflineCode → resolved member: "${member.fullName}"');
@@ -527,7 +527,7 @@ class AttendanceService {
       try {
         final member = await _memberService.getMemberByOfflineCode(code);
         if (member == null) {
-          throw Exception('Member not found');
+          throw Exception('The code entered does not match any member. Please check and try again.');
         }
 
         final now = DateTime.now();

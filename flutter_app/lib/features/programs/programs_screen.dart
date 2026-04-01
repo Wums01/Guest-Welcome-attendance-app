@@ -345,7 +345,7 @@ class _ProgramsScreenState extends ConsumerState<ProgramsScreen> {
                 child: programsAsync.when(
                   loading: () =>
                       const Center(child: CircularProgressIndicator()),
-                  error: (e, _) => Center(child: Text('Error: $e')),
+            error: (e, _) => const Center(child: Text('Unable to load programs. Please try again.')),
                   data: (programs) {
                     final filtered = _applyFilters(programs);
                     if (filtered.isEmpty) {
@@ -609,7 +609,7 @@ class _ProgramCard extends ConsumerWidget {
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
+          const SnackBar(content: Text('Unable to delete program. Please try again.')),
         );
       }
     }
@@ -713,8 +713,8 @@ class _CreateProgramFormState
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text('$e'),
+          const SnackBar(
+              content: Text('Unable to create program. Please try again.'),
               backgroundColor: AppTheme.error),
         );
       }
@@ -918,8 +918,8 @@ class _AddSessionSheetState extends ConsumerState<_AddSessionSheet> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text('Error: $e'),
+          const SnackBar(
+              content: Text('Unable to create session. Please try again.'),
               backgroundColor: AppTheme.error),
         );
       }

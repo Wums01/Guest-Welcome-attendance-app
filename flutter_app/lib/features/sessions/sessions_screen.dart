@@ -247,7 +247,7 @@ class _ByDateTab extends ConsumerWidget {
           Expanded(
             child: sessionsAsync.when(
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Center(child: Text('Error: $e')),
+              error: (e, _) => const Center(child: Text('Unable to load sessions. Please try again.')),
               data: (sessions) {
                 final filtered = query.isEmpty
                     ? sessions
@@ -392,9 +392,9 @@ class _ProgramAccordion extends ConsumerWidget {
                 padding: EdgeInsets.all(16),
                 child: Center(child: CircularProgressIndicator()),
               ),
-              error: (e, _) => Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text('Error: $e'),
+              error: (e, _) => const Padding(
+                padding: EdgeInsets.all(16),
+                child: Text('Unable to delete session. Please try again.'),
               ),
               data: (sessions) {
                 if (sessions.isEmpty) {
