@@ -1,0 +1,25 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="1024" height="1024" fill="none"/>
+  
+  <!-- Main circle background -->
+  <circle cx="512" cy="512" r="450" fill="#1F6BA4" opacity="0.95"/>
+  
+  <!-- Light secondary circle for depth -->
+  <circle cx="512" cy="512" r="400" fill="#2E8BC0" opacity="0.7"/>
+  
+  <!-- Checkmark -->
+  <g stroke="#FFFFFF" stroke-width="80" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <polyline points="250,520 420,680 740,360"/>
+  </g>
+  
+  <!-- Door/Welcome frame accent -->
+  <rect x="280" y="280" width="460" height="520" fill="none" stroke="#4CAF50" stroke-width="40" rx="40" opacity="0.8"/>
+  
+  <!-- Subtle accent circles for people/welcome -->
+  <circle cx="320" cy="350" r="50" fill="#FFFFFF" opacity="0.3"/>
+  <circle cx="700" cy="350" r="50" fill="#FFFFFF" opacity="0.3"/>
+  
+  <!-- Border for definition -->
+  <circle cx="512" cy="512" r="450" fill="none" stroke="#1565C0" stroke-width="15"/>
+</svg>

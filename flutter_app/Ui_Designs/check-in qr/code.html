@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Guest Check-in | Welcome App</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;family=Poppins:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#0f49bd",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#101622",
+                    },
+                    fontFamily: {
+                        "display": ["Poppins", "Plus Jakarta Sans", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .scanner-overlay {
+            background: rgba(0, 0, 0, 0.6);
+            clip-path: polygon(0% 0%, 0% 100%, 15% 100%, 15% 25%, 85% 25%, 85% 75%, 15% 75%, 15% 100%, 100% 100%, 100% 0%);
+        }
+        .scanner-frame {
+            border: 2px solid rgba(255, 255, 255, 0.5);
+        }
+        .scanner-corner {
+            width: 40px;
+            height: 40px;
+            border-color: #ffffff;
+            position: absolute;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 antialiased">
+<div class="relative flex h-screen w-full flex-col overflow-hidden">
+<!-- Header -->
+<header class="z-20 flex items-center justify-between p-4 bg-white/80 dark:bg-background-dark/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
+<button class="flex size-10 items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+<span class="material-symbols-outlined text-slate-700 dark:text-slate-300">arrow_back</span>
+</button>
+<h1 class="text-lg font-bold tracking-tight text-slate-900 dark:text-slate-100">Guest Check-in</h1>
+<button class="flex size-10 items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+<span class="material-symbols-outlined text-slate-700 dark:text-slate-300">help</span>
+</button>
+</header>
+<!-- Main Content Area (Camera View) -->
+<main class="relative flex-1 bg-slate-900 overflow-hidden flex flex-col items-center justify-center">
+<!-- Camera Placeholder Background -->
+<div class="absolute inset-0 z-0">
+<img alt="People gathering in a warm church foyer" class="w-full h-full object-cover opacity-50 blur-[2px]" data-alt="Blurred background of a warm church lobby interior" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC1ZjXC_jdPlmZwEYkBxYb7aBT7qegvwqPv1ycZO6U45FjeKhQ1tyi2OWH14tam3-WQyz1h6ALS-tS0qZEMCqDDVVkdId0vjT69CTQmuJKrvnho8-Kif4OUahUbzfBjAAWLBkyY1xRW2GjKZGBc4uRdPpNG-YRrhHV2gGtBYHlirbV3Ab7Uu65HELwcdt_8rA5c-zJ4C0xv0Hz8H6sXVieAbmeHKoLzscd4Rex7uxUFrBRx8mbk-HrWDXJkGCxIeXNiznnGkEBdKqKu"/>
+<div class="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/60"></div>
+</div>
+<!-- Scanner Overlay & Frame -->
+<div class="absolute inset-0 z-10 scanner-overlay"></div>
+<div class="relative z-20 w-64 h-64 md:w-80 md:h-80">
+<!-- Decorative Corners -->
+<div class="scanner-corner border-t-4 border-l-4 top-0 left-0 rounded-tl-xl border-primary"></div>
+<div class="scanner-corner border-t-4 border-r-4 top-0 right-0 rounded-tr-xl border-primary"></div>
+<div class="scanner-corner border-b-4 border-l-4 bottom-0 left-0 rounded-bl-xl border-primary"></div>
+<div class="scanner-corner border-b-4 border-r-4 bottom-0 right-0 rounded-br-xl border-primary"></div>
+<!-- Scanning Line -->
+<div class="absolute left-4 right-4 h-0.5 bg-primary/80 shadow-[0_0_15px_rgba(15,73,189,0.8)] top-1/2 -translate-y-1/2"></div>
+</div>
+<!-- Scanning Status -->
+<div class="relative z-20 mt-12 flex flex-col items-center gap-3">
+<div class="flex items-center gap-2 px-4 py-2 bg-black/40 backdrop-blur-md rounded-full border border-white/10">
+<span class="relative flex h-3 w-3">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+<span class="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
+</span>
+<p class="text-white text-sm font-medium">Scanning for QR Code...</p>
+</div>
+<p class="text-slate-300 text-xs text-center max-w-[240px] px-4 leading-relaxed">
+                    Align the guest's check-in code within the frame to automatically scan
+                </p>
+</div>
+<!-- Controls (Flashlight & Code) -->
+<div class="absolute bottom-10 left-0 right-0 z-20 px-6 flex flex-col gap-6">
+<div class="flex justify-center gap-8">
+<div class="flex flex-col items-center gap-2">
+<button class="flex size-14 items-center justify-center rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-white/20 transition-all">
+<span class="material-symbols-outlined text-2xl">flashlight_on</span>
+</button>
+<span class="text-[10px] font-semibold uppercase tracking-widest text-white/70">Flashlight</span>
+</div>
+<div class="flex flex-col items-center gap-2">
+<button class="flex size-14 items-center justify-center rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-white/20 transition-all">
+<span class="material-symbols-outlined text-2xl">image</span>
+</button>
+<span class="text-[10px] font-semibold uppercase tracking-widest text-white/70">Gallery</span>
+</div>
+</div>
+<button class="w-full py-4 bg-primary hover:bg-primary/90 text-white rounded-xl font-semibold shadow-lg shadow-primary/20 flex items-center justify-center gap-2 transition-transform active:scale-[0.98]">
+<span class="material-symbols-outlined">keyboard</span>
+                    Enter Code Manually
+                </button>
+</div>
+</main>
+<!-- Bottom Navigation Bar -->
+<nav class="z-20 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-background-dark px-6 pb-6 pt-3">
+<div class="flex items-center justify-between max-w-md mx-auto">
+<a class="flex flex-col items-center gap-1 group" href="#">
+<div class="flex h-10 w-10 items-center justify-center rounded-xl text-slate-400 group-hover:bg-slate-50 dark:group-hover:bg-slate-800 transition-colors">
+<span class="material-symbols-outlined">home</span>
+</div>
+<p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Home</p>
+</a>
+<a class="flex flex-col items-center gap-1 group" href="#">
+<div class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors">
+<span class="material-symbols-outlined font-variation-fill">qr_code_scanner</span>
+</div>
+<p class="text-[10px] font-bold uppercase tracking-wider text-primary">Check-in</p>
+</a>
+<a class="flex flex-col items-center gap-1 group" href="#">
+<div class="flex h-10 w-10 items-center justify-center rounded-xl text-slate-400 group-hover:bg-slate-50 dark:group-hover:bg-slate-800 transition-colors">
+<span class="material-symbols-outlined">group</span>
+</div>
+<p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Guests</p>
+</a>
+<a class="flex flex-col items-center gap-1 group" href="#">
+<div class="flex h-10 w-10 items-center justify-center rounded-xl text-slate-400 group-hover:bg-slate-50 dark:group-hover:bg-slate-800 transition-colors">
+<span class="material-symbols-outlined">settings</span>
+</div>
+<p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Admin</p>
+</a>
+</div>
+</nav>
+</div>
+</body></html>

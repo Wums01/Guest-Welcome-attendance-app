@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "on-secondary-fixed": "#221b00",
+            "on-secondary-fixed-variant": "#544600",
+            "primary-container": "#0a1128",
+            "error-container": "#93000a",
+            "on-tertiary-fixed": "#221b00",
+            "on-primary-fixed": "#141a32",
+            "surface-tint": "#bfc5e4",
+            "inverse-on-surface": "#313030",
+            "on-tertiary": "#3a3000",
+            "surface-container-low": "#1c1b1b",
+            "surface": "#131313",
+            "on-secondary-container": "#725f00",
+            "surface-dim": "#131313",
+            "outline-variant": "#46464d",
+            "secondary-container": "#ffdb3c",
+            "secondary-fixed-dim": "#e9c400",
+            "on-secondary": "#3a3000",
+            "surface-variant": "#353534",
+            "error": "#ffb4ab",
+            "on-primary-fixed-variant": "#3f465f",
+            "on-error-container": "#ffdad6",
+            "tertiary-container": "#c9a900",
+            "surface-container-lowest": "#0e0e0e",
+            "primary-fixed-dim": "#bfc5e4",
+            "surface-container": "#201f1f",
+            "tertiary-fixed-dim": "#e9c400",
+            "surface-bright": "#393939",
+            "inverse-primary": "#575d78",
+            "primary-fixed": "#dce1ff",
+            "surface-container-high": "#2a2a2a",
+            "outline": "#909098",
+            "tertiary": "#e9c400",
+            "tertiary-fixed": "#ffe16d",
+            "on-surface-variant": "#c6c6ce",
+            "secondary": "#fff9ef",
+            "primary": "#bfc5e4",
+            "on-surface": "#e5e2e1",
+            "background": "#131313",
+            "on-primary-container": "#767c99",
+            "inverse-surface": "#e5e2e1",
+            "on-error": "#690005",
+            "on-background": "#e5e2e1",
+            "secondary-fixed": "#ffe16d",
+            "on-tertiary-fixed-variant": "#544600",
+            "on-primary": "#292f48",
+            "surface-container-highest": "#353534",
+            "on-tertiary-container": "#4c3f00"
+          },
+          fontFamily: {
+            "headline": ["Plus Jakarta Sans"],
+            "body": ["Plus Jakarta Sans"],
+            "label": ["Plus Jakarta Sans"]
+          },
+          borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+        },
+      },
+    }
+  </script>
+<style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+    .glass-effect { backdrop-filter: blur(24px); }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface min-h-screen pb-24">
+<!-- TopAppBar -->
+<header class="bg-[#0A1128] dark:bg-[#0A1128] fixed top-0 w-full z-50 flex items-center justify-between px-6 h-20">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full overflow-hidden bg-primary-container border-2 border-tertiary">
+<img alt="Sarah Usher Team Lead profile" class="w-full h-full object-cover" data-alt="Portrait of a friendly middle-aged woman with a warm smile, wearing a professional blazer in a soft focus office setting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCGn71puGw8W5BQjTze1hqJdZazulZkMjMRzrTOvIgDfK4cbyFrj6_XT-zAr_3joWN367O4kEZ70h4nsYjrCviqCJBXYk8hnFRe_uKJfCeOIvI2se4hPPiSwlhZpof1U8bqlWHpRU_V2KeGEj2QfdOKu-kwneixxjuQ7lZ9snVRxgc4FtCaz4IWzTkIwrJMXyVQP8fXZdiu8euxCb7Q-eyjtu_uteHG3SjCxMHvJ410N9cQIndnQOGVVtugBps2B-HX3mAuM9E6_jb5"/>
+</div>
+<span class="font-plus-jakarta text-[#fff9ef] tracking-tight font-bold text-2xl italic">The Hearth</span>
+</div>
+<div class="flex items-center gap-6">
+<nav class="hidden md:flex items-center gap-8 font-medium">
+<a class="text-[#e9c400] transition-colors hover:text-[#fff9ef]" href="#">Home</a>
+<a class="text-[#c6c6ce] transition-colors hover:text-[#fff9ef]" href="#">Sessions</a>
+<a class="text-[#c6c6ce] transition-colors hover:text-[#fff9ef]" href="#">Programs</a>
+</nav>
+<button class="material-symbols-outlined text-[#bfc5e4] scale-95 active:duration-150">notifications</button>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="pt-28 px-6 max-w-7xl mx-auto space-y-10">
+<!-- Welcome Header -->
+<section class="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+<div class="space-y-1">
+<p class="text-tertiary font-medium tracking-widest uppercase text-xs">Sunday, October 20, 2024</p>
+<h1 class="text-4xl md:text-5xl font-extrabold tracking-tight text-secondary">Welcome, Sarah</h1>
+<p class="text-on-surface-variant text-lg">You have one active session starting soon.</p>
+</div>
+</section>
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+<!-- Featured Session Card -->
+<div class="lg:col-span-8 bg-primary-container rounded-xl p-8 relative overflow-hidden group border border-outline-variant/10">
+<div class="absolute top-0 left-0 w-1.5 h-full bg-tertiary"></div>
+<div class="relative z-10 flex flex-col h-full justify-between">
+<div>
+<div class="flex items-center gap-2 mb-4">
+<span class="bg-tertiary/10 text-tertiary px-3 py-1 rounded-full text-xs font-bold tracking-widest uppercase">Live Now</span>
+</div>
+<h2 class="text-3xl font-bold text-secondary mb-2">Sunday Morning Service</h2>
+<div class="flex flex-wrap gap-6 text-on-surface-variant">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary text-sm">schedule</span>
+<span>9:00 AM - 11:30 AM</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary text-sm">location_on</span>
+<span>Main Sanctuary</span>
+</div>
+</div>
+</div>
+<div class="mt-12 flex flex-col sm:flex-row items-center gap-6">
+<button class="w-full sm:w-auto px-8 py-4 bg-gradient-to-br from-tertiary to-tertiary-container text-on-tertiary font-bold rounded-xl shadow-lg shadow-tertiary/20 hover:scale-[1.02] active:scale-95 transition-transform">
+              Start Check-in
+            </button>
+<div class="flex gap-8">
+<div class="text-center sm:text-left">
+<p class="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold mb-1">Registered</p>
+<p class="text-2xl font-bold text-secondary">142</p>
+</div>
+<div class="text-center sm:text-left">
+<p class="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold mb-1">Expected</p>
+<p class="text-2xl font-bold text-secondary">210</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Decorative Background Element -->
+<div class="absolute -right-12 -bottom-12 w-64 h-64 bg-tertiary/5 rounded-full blur-3xl group-hover:bg-tertiary/10 transition-colors"></div>
+</div>
+<!-- Quick Stats / Progress -->
+<div class="lg:col-span-4 space-y-6">
+<div class="bg-surface-container rounded-xl p-6 border border-outline-variant/5">
+<h3 class="text-sm font-bold uppercase tracking-widest text-on-surface-variant mb-6">Attendance Target</h3>
+<div class="relative pt-1">
+<div class="flex mb-4 items-center justify-between">
+<div>
+<span class="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-tertiary bg-tertiary/10">
+                  Capacity Reach
+                </span>
+</div>
+<div class="text-right">
+<span class="text-xs font-bold inline-block text-tertiary">
+                  68%
+                </span>
+</div>
+</div>
+<div class="overflow-hidden h-2 mb-4 text-xs flex rounded-full bg-surface-container-highest">
+<div class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-tertiary" style="width:68%"></div>
+</div>
+<p class="text-xs text-on-surface-variant leading-relaxed">Attendance is tracking 12% higher than last Sunday at this time.</p>
+</div>
+</div>
+<div class="bg-surface-container-low rounded-xl p-6 border border-outline-variant/5 flex items-center justify-between group cursor-pointer hover:bg-surface-container transition-colors">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-xl bg-primary-container flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">analytics</span>
+</div>
+<div>
+<p class="font-bold text-secondary">View Reports</p>
+<p class="text-xs text-on-surface-variant">Last week's summary</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant group-hover:translate-x-1 transition-transform">chevron_right</span>
+</div>
+</div>
+</div>
+<!-- Celebration Section -->
+<section>
+<div class="flex items-center justify-between mb-8">
+<h2 class="text-2xl font-bold text-secondary flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary">celebration</span>
+          Birthdays &amp; Anniversaries
+        </h2>
+<button class="text-tertiary text-sm font-bold uppercase tracking-widest hover:underline">View All</button>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+<!-- Birthday Card -->
+<div class="bg-surface-container-low rounded-xl p-6 flex items-center gap-5 border border-outline-variant/5 hover:border-tertiary/20 transition-all cursor-default group">
+<div class="relative">
+<div class="w-16 h-16 rounded-full overflow-hidden border-2 border-tertiary/30">
+<img alt="Jane Cooper" class="w-full h-full object-cover" data-alt="Close up portrait of a smiling young woman with curly hair in a garden setting, natural sunlight" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDS7ymaWZzuTFDL33aZDkOtiGACRQKbDKzkqP8brI_pocbqIOnL9iyHj1u8e3XEWNACw60Nu2taVOjADsM-X-ES5S_gIKp1sJGhNq7tKctQRp5_sqAcfat1XT481f_qOGGCzxlBDSFUgidYxhCZylwgygpTFrFtXPNxSK7FIF3biKyoV_cpUSMf_Z0u7NynL1EPKIEogtdqmlAe0dTrF2doz-vTGdE-o1QeBhEiXkWwlU4D10s8I8pw_NXLTu7aFARvPyQefhnRSQ05"/>
+</div>
+<div class="absolute -bottom-1 -right-1 bg-tertiary text-on-tertiary w-6 h-6 rounded-full flex items-center justify-center border-2 border-surface-container-low">
+<span class="material-symbols-outlined text-[14px]" style="font-variation-settings: 'FILL' 1;">cake</span>
+</div>
+</div>
+<div>
+<h4 class="font-bold text-secondary text-lg">Jane Cooper</h4>
+<p class="text-on-surface-variant text-sm">Today</p>
+<div class="mt-2 inline-flex items-center px-2 py-0.5 rounded bg-tertiary/10 text-tertiary text-[10px] font-bold uppercase tracking-widest">Birthday</div>
+</div>
+</div>
+<!-- Anniversary Card -->
+<div class="bg-surface-container-low rounded-xl p-6 flex items-center gap-5 border border-outline-variant/5 hover:border-tertiary/20 transition-all cursor-default group">
+<div class="relative">
+<div class="w-16 h-16 rounded-full overflow-hidden border-2 border-primary/30">
+<img alt="The Wilsons" class="w-full h-full object-cover" data-alt="A happy older couple embracing in a sunlit park, looking at each other affectionately" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCFdydOtWLOgH840bff4ru6koqzCLs_kEWuWG3VGUsFpZwPTC2nw3ElHDLsDYVH4Af088iksKqum1GXN25XpP2uoeKpoikZYkAcfQxX4xzlMywKRVngL-gvUg-KukAGKSFeoCM6uXJm3bJCtzFE9qqeFuORR1Cen0kVa4-A1aRpVRC3QKNHtaS-zp05vmFJsy3h9SgppdmzS6GXCt5FITEl7Q0oUzDXaIBHqX6tp7n3yL14khypQUeXIKTtAEqV7Uw-alybh_1-Fnev"/>
+</div>
+<div class="absolute -bottom-1 -right-1 bg-primary text-on-primary w-6 h-6 rounded-full flex items-center justify-center border-2 border-surface-container-low">
+<span class="material-symbols-outlined text-[14px]" style="font-variation-settings: 'FILL' 1;">favorite</span>
+</div>
+</div>
+<div>
+<h4 class="font-bold text-secondary text-lg">The Wilsons</h4>
+<p class="text-on-surface-variant text-sm">Oct 22 • 10 Years</p>
+<div class="mt-2 inline-flex items-center px-2 py-0.5 rounded bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-widest">Anniversary</div>
+</div>
+</div>
+<!-- Empty Placeholder for Future events -->
+<div class="hidden lg:flex bg-surface-container-lowest rounded-xl p-6 border border-dashed border-outline-variant/20 flex-col items-center justify-center text-center opacity-40">
+<span class="material-symbols-outlined text-3xl mb-2">event_note</span>
+<p class="text-xs uppercase tracking-widest font-bold">Upcoming Events</p>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full z-50 flex justify-around items-center px-4 pb-6 pt-3 bg-[#131313]/80 backdrop-blur-xl md:hidden shadow-[0_-4px_24px_0_rgba(0,0,0,0.4)] rounded-t-3xl">
+<a class="flex flex-col items-center justify-center text-[#e9c400] bg-[#e9c400]/10 rounded-xl px-3 py-1 scale-90 duration-200 ease-out" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">home</span>
+<span class="font-plus-jakarta text-[10px] font-medium uppercase tracking-widest mt-1">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#c6c6ce] opacity-60 hover:opacity-100 transition-opacity" href="#">
+<span class="material-symbols-outlined">event_upcoming</span>
+<span class="font-plus-jakarta text-[10px] font-medium uppercase tracking-widest mt-1">Sessions</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#c6c6ce] opacity-60 hover:opacity-100 transition-opacity" href="#">
+<span class="material-symbols-outlined">layers</span>
+<span class="font-plus-jakarta text-[10px] font-medium uppercase tracking-widest mt-1">Programs</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#c6c6ce] opacity-60 hover:opacity-100 transition-opacity" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="font-plus-jakarta text-[10px] font-medium uppercase tracking-widest mt-1">Members</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#c6c6ce] opacity-60 hover:opacity-100 transition-opacity" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="font-plus-jakarta text-[10px] font-medium uppercase tracking-widest mt-1">Reports</span>
+</a>
+</nav>
+<!-- FAB -->
+<button class="fixed bottom-24 right-6 md:bottom-8 md:right-8 w-14 h-14 bg-tertiary text-on-tertiary rounded-full shadow-2xl flex items-center justify-center z-40 hover:scale-110 active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-3xl">add</span>
+</button>
+</body></html>

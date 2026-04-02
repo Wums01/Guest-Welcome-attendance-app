@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>The Hearth | Reports Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "on-secondary-fixed": "#221b00",
+                        "on-secondary-fixed-variant": "#544600",
+                        "primary-container": "#0a1128",
+                        "error-container": "#93000a",
+                        "on-tertiary-fixed": "#221b00",
+                        "on-primary-fixed": "#141a32",
+                        "surface-tint": "#bfc5e4",
+                        "inverse-on-surface": "#313030",
+                        "on-tertiary": "#3a3000",
+                        "surface-container-low": "#1c1b1b",
+                        "surface": "#131313",
+                        "on-secondary-container": "#725f00",
+                        "surface-dim": "#131313",
+                        "outline-variant": "#46464d",
+                        "secondary-container": "#ffdb3c",
+                        "secondary-fixed-dim": "#e9c400",
+                        "on-secondary": "#3a3000",
+                        "surface-variant": "#353534",
+                        "error": "#ffb4ab",
+                        "on-primary-fixed-variant": "#3f465f",
+                        "on-error-container": "#ffdad6",
+                        "tertiary-container": "#c9a900",
+                        "surface-container-lowest": "#0e0e0e",
+                        "primary-fixed-dim": "#bfc5e4",
+                        "surface-container": "#201f1f",
+                        "tertiary-fixed-dim": "#e9c400",
+                        "surface-bright": "#393939",
+                        "inverse-primary": "#575d78",
+                        "primary-fixed": "#dce1ff",
+                        "surface-container-high": "#2a2a2a",
+                        "outline": "#909098",
+                        "tertiary": "#e9c400",
+                        "tertiary-fixed": "#ffe16d",
+                        "on-surface-variant": "#c6c6ce",
+                        "secondary": "#fff9ef",
+                        "primary": "#bfc5e4",
+                        "on-surface": "#e5e2e1",
+                        "background": "#131313",
+                        "on-primary-container": "#767c99",
+                        "inverse-surface": "#e5e2e1",
+                        "on-error": "#690005",
+                        "on-background": "#e5e2e1",
+                        "secondary-fixed": "#ffe16d",
+                        "on-tertiary-fixed-variant": "#544600",
+                        "on-primary": "#292f48",
+                        "surface-container-highest": "#353534",
+                        "on-tertiary-container": "#4c3f00"
+                    },
+                    fontFamily: {
+                        "headline": ["Plus Jakarta Sans"],
+                        "body": ["Plus Jakarta Sans"],
+                        "label": ["Plus Jakarta Sans"]
+                    },
+                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #131313; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .glass-panel { background: rgba(32, 31, 31, 0.7); backdrop-filter: blur(12px); }
+        .bento-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 1.5rem; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="text-on-surface selection:bg-tertiary selection:text-on-tertiary pb-32">
+<!-- TopAppBar -->
+<header class="bg-[#0A1128] dark:bg-[#0A1128] flex items-center justify-between px-6 h-20 w-full docked full-width top-0 z-50 sticky">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-primary-container overflow-hidden ring-2 ring-primary/20">
+<img alt="Minister profile photo" class="w-full h-full object-cover" data-alt="Close-up portrait of a mature male minister with a warm smile and professional attire in a softly lit office" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDara26vMPuDmAcCJD-dIr_yjVCwjvNG145yazTa9CPRPKTbUkgyxDrXFOHzHxG5Q6Ou3XtI-8nnFaKSeIRcSzOnLxn6HBUy6JR7LoH8dCYTdF9XaLaEB8gdayftkNX42nphAPH8OVMWMRMnfENDjKJXDRZUwtSgchXA9f_dAXitdJyoH5W2LONzKctkfd3g4-OW_Xt9R7NYHupg9LagMIXWMah6RhqFIHkwfPCtifwtBNoPW_2rKPjVeNgIdnpVqWJ_eoeyFxI_4UP"/>
+</div>
+<span class="text-2xl font-bold text-[#fff9ef] italic tracking-tight font-plus-jakarta">The Hearth</span>
+</div>
+<div class="hidden md:flex gap-8 items-center">
+<a class="text-[#c6c6ce] hover:text-[#fff9ef] transition-colors font-medium text-sm" href="#">Home</a>
+<a class="text-[#c6c6ce] hover:text-[#fff9ef] transition-colors font-medium text-sm" href="#">Sessions</a>
+<a class="text-[#c6c6ce] hover:text-[#fff9ef] transition-colors font-medium text-sm" href="#">Programs</a>
+<a class="text-[#c6c6ce] hover:text-[#fff9ef] transition-colors font-medium text-sm" href="#">Members</a>
+<a class="text-[#e9c400] font-bold text-sm" href="#">Reports</a>
+</div>
+<button class="text-[#bfc5e4] dark:text-[#bfc5e4] scale-95 active:duration-150 p-2 rounded-full hover:bg-white/5 transition-colors">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+</header>
+<main class="max-w-7xl mx-auto px-6 pt-10">
+<!-- Header Section -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
+<div class="max-w-2xl">
+<h1 class="text-4xl md:text-5xl font-extrabold tracking-tight text-secondary mb-4">Ministry Insights</h1>
+<p class="text-on-surface-variant text-lg">Detailed attendance metrics and engagement trends for your community.</p>
+</div>
+<!-- Filters -->
+<div class="flex flex-wrap gap-2 p-1.5 bg-surface-container-low rounded-xl">
+<button class="px-5 py-2.5 rounded-lg text-sm font-bold bg-tertiary text-on-tertiary-fixed transition-all">Overall</button>
+<button class="px-5 py-2.5 rounded-lg text-sm font-medium text-on-surface-variant hover:text-secondary hover:bg-surface-container transition-all">Team A</button>
+<button class="px-5 py-2.5 rounded-lg text-sm font-medium text-on-surface-variant hover:text-secondary hover:bg-surface-container transition-all">Team B</button>
+<button class="px-5 py-2.5 rounded-lg text-sm font-medium text-on-surface-variant hover:text-secondary hover:bg-surface-container transition-all">Team C</button>
+</div>
+</div>
+<!-- Bento Stats Grid -->
+<div class="bento-grid">
+<!-- Stats Card 1: Attendance -->
+<div class="col-span-12 md:col-span-4 bg-surface-container rounded-xl p-8 border-l-4 border-primary shadow-lg hover:bg-surface-container-high transition-colors">
+<div class="flex items-center justify-between mb-6">
+<span class="material-symbols-outlined text-primary text-4xl" data-icon="analytics">analytics</span>
+<span class="text-xs font-bold uppercase tracking-widest text-primary/60">Active Engagement</span>
+</div>
+<div class="flex flex-col">
+<span class="text-5xl font-extrabold text-secondary mb-1">88%</span>
+<span class="text-on-surface-variant font-medium">Avg Attendance</span>
+</div>
+</div>
+<!-- Stats Card 2: Members -->
+<div class="col-span-12 md:col-span-4 bg-surface-container rounded-xl p-8 border-l-4 border-tertiary shadow-lg hover:bg-surface-container-high transition-colors">
+<div class="flex items-center justify-between mb-6">
+<span class="material-symbols-outlined text-tertiary text-4xl" data-icon="group">group</span>
+<span class="text-xs font-bold uppercase tracking-widest text-tertiary/60">Growth Metric</span>
+</div>
+<div class="flex flex-col">
+<span class="text-5xl font-extrabold text-secondary mb-1">1,240</span>
+<span class="text-on-surface-variant font-medium">Total Members</span>
+</div>
+</div>
+<!-- Growth Highlight -->
+<div class="col-span-12 md:col-span-4 bg-gradient-to-br from-primary-container to-surface-container rounded-xl p-8 relative overflow-hidden group">
+<div class="relative z-10">
+<h3 class="text-xl font-bold text-primary mb-2">Steady Growth</h3>
+<p class="text-on-surface-variant text-sm mb-6 leading-relaxed">Engagement is up 12% compared to last quarter. Community reach continues to expand.</p>
+<button class="text-sm font-bold text-tertiary flex items-center gap-2 group-hover:gap-3 transition-all">
+                        View Detailed Log <span class="material-symbols-outlined text-sm" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+<span class="material-symbols-outlined absolute -bottom-4 -right-4 text-9xl text-primary/5 group-hover:scale-110 transition-transform" data-icon="trending_up">trending_up</span>
+</div>
+<!-- Attendance Trends Chart Area -->
+<div class="col-span-12 lg:col-span-8 bg-surface-container-low rounded-xl p-8 min-h-[400px]">
+<div class="flex items-center justify-between mb-10">
+<h2 class="text-2xl font-bold text-secondary">Attendance Trends</h2>
+<div class="flex gap-4">
+<div class="flex items-center gap-2">
+<span class="w-3 h-3 rounded-full bg-primary"></span>
+<span class="text-xs text-on-surface-variant">Last Month</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="w-3 h-3 rounded-full bg-tertiary"></span>
+<span class="text-xs text-on-surface-variant">This Month</span>
+</div>
+</div>
+</div>
+<!-- Mock Chart Visual -->
+<div class="relative h-64 flex items-end justify-between gap-4 px-4 border-b border-outline-variant/30">
+<div class="w-full bg-primary/10 rounded-t-lg h-[40%] group relative">
+<div class="absolute -top-10 left-1/2 -translate-x-1/2 bg-primary text-on-primary text-[10px] font-bold px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">742</div>
+</div>
+<div class="w-full bg-primary/20 rounded-t-lg h-[55%] group relative">
+<div class="absolute -top-10 left-1/2 -translate-x-1/2 bg-primary text-on-primary text-[10px] font-bold px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">890</div>
+</div>
+<div class="w-full bg-primary/10 rounded-t-lg h-[45%] group relative">
+<div class="absolute -top-10 left-1/2 -translate-x-1/2 bg-primary text-on-primary text-[10px] font-bold px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">810</div>
+</div>
+<div class="w-full bg-tertiary rounded-t-lg h-[90%] group relative">
+<div class="absolute -top-10 left-1/2 -translate-x-1/2 bg-tertiary text-on-tertiary text-[10px] font-bold px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">1120</div>
+</div>
+<div class="w-full bg-primary/10 rounded-t-lg h-[65%] group relative">
+<div class="absolute -top-10 left-1/2 -translate-x-1/2 bg-primary text-on-primary text-[10px] font-bold px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">940</div>
+</div>
+<div class="w-full bg-primary/15 rounded-t-lg h-[80%] group relative">
+<div class="absolute -top-10 left-1/2 -translate-x-1/2 bg-primary text-on-primary text-[10px] font-bold px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">1020</div>
+</div>
+</div>
+<div class="flex justify-between mt-4 px-4 text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">
+<span>Wk 1</span><span>Wk 2</span><span>Wk 3</span><span>Wk 4</span><span>Wk 5</span><span>Wk 6</span>
+</div>
+</div>
+<!-- Monthly Leaderboard -->
+<div class="col-span-12 lg:col-span-4 flex flex-col gap-6">
+<div class="flex items-center justify-between">
+<h2 class="text-xl font-bold text-secondary">Monthly Leaderboard</h2>
+<span class="text-xs font-bold text-tertiary">Top 10</span>
+</div>
+<div class="space-y-4">
+<!-- Top Attender -->
+<div class="bg-surface-container rounded-xl p-5 flex items-center gap-4 border border-tertiary/20 relative group hover:border-tertiary/50 transition-all">
+<div class="relative">
+<img class="w-14 h-14 rounded-full object-cover" data-alt="Close-up headshot of a friendly young man with short brown hair and a bright smile" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCEVgN19P3bCRJz3UcgfFK8k7SO308OXpHU58K2zyMIZPnCCb2CD7KmgtgnRMZBgdPS7xcyKo7OyZSOxGuF7xJhWN_yWlWsjD8xyyhTJrh-v_pcVU05WTpA_08qe-AmmH4vEtIqI6P5tWeGlNcfa4k6VD-zEZe8b0D20P1dLHGUa3jI-w0wtLrC7tbBTKf-ZhlueloJ9OtGyTwFfsAEGPLr-IB-7iaAPHCNZXQR3FAO7d5qPsJLj_RvihPjKpxVmeO23dDpI6s9HEY-"/>
+<div class="absolute -top-2 -right-2 bg-tertiary text-on-tertiary rounded-full p-1 shadow-lg ring-2 ring-surface">
+<span class="material-symbols-outlined text-[16px]" data-icon="star" style="font-variation-settings: 'FILL' 1;">star</span>
+</div>
+</div>
+<div class="flex-1">
+<h4 class="font-bold text-secondary">David Miller</h4>
+<p class="text-xs text-on-surface-variant font-medium">5/5 sessions completed</p>
+</div>
+<div class="text-right">
+<span class="text-lg font-extrabold text-tertiary">100%</span>
+</div>
+</div>
+<!-- Rank 2 -->
+<div class="bg-surface-container rounded-xl p-5 flex items-center gap-4 hover:bg-surface-container-high transition-all">
+<img class="w-14 h-14 rounded-full object-cover" data-alt="Professional portrait of a woman with auburn hair wearing business casual attire, neutral background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD-jcdYsrpUBOFtqTH8aHx_qWyacI81SiLgZVYo0807Ku84AUL2jnQybXXsRI4UgVzWFxlYj6JZe1ocZCSwqHoyGQjGuh-dVRTAQ40UUw-udnf5rzHGsNxWkn59fzZ5nSmi9lSNtfuzpxQFYxRY8QEjA2tEnX2lLZvAfvIltfNdRUazYbycEiUUgmV5t6wU5CNPuBKBYvzfb6SFemCSIfVtl2OkFQikYQT7yuXYiro_Zk7JExTWfSTat32qn81Wtk_28Uniyl1nBtlR"/>
+<div class="flex-1">
+<h4 class="font-bold text-secondary">Sarah Jenkins</h4>
+<p class="text-xs text-on-surface-variant font-medium">45/46 sessions</p>
+</div>
+<div class="text-right">
+<span class="text-lg font-extrabold text-secondary">98%</span>
+</div>
+</div>
+<!-- Rank 3 -->
+<div class="bg-surface-container rounded-xl p-5 flex items-center gap-4 hover:bg-surface-container-high transition-all">
+<img class="w-14 h-14 rounded-full object-cover" data-alt="Medium shot of a smiling Asian man in a modern office setting, soft natural lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDRMxqL_sn3DMRA2Dq6UcuHSoeJLJGTOlWUQyMgc3fTXhiHXu2DDDa3BknO-bAuVT1tEev4hjiVAtMzvj5cnAp5pQfESU5EN-G1sU4HAz3SHRjdeZ4nC47mn7dg241GD_DnU7h1Buwx00PZHQfSLq-lDrnDVy2qcsvvvjerRobrI-mkOVzCNavolHiAWhDkizjg4G1nabeSIiGekQ6oswCiYiE69vDD1kKJ19n7wtz-JFOA9wxz8HZV5rqV6eOAgEqT-Nngc38JvT2q"/>
+<div class="flex-1">
+<h4 class="font-bold text-secondary">Robert Chen</h4>
+<p class="text-xs text-on-surface-variant font-medium">43/45 sessions</p>
+</div>
+<div class="text-right">
+<span class="text-lg font-extrabold text-secondary">95%</span>
+</div>
+</div>
+</div>
+<button class="w-full py-4 border border-outline-variant/20 rounded-xl text-xs font-bold uppercase tracking-widest text-on-surface-variant hover:bg-surface-container-high transition-all">
+                    View Full Rankings
+                </button>
+</div>
+</div>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="fixed bottom-0 w-full z-50 flex justify-around items-center px-4 pb-6 pt-3 md:hidden bg-[#131313]/80 backdrop-blur-xl shadow-[0_-4px_24px_0_rgba(0,0,0,0.4)] rounded-t-3xl">
+<a class="flex flex-col items-center justify-center text-[#c6c6ce] opacity-60 hover:opacity-100 transition-opacity" href="#">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="font-plus-jakarta text-[10px] font-medium uppercase tracking-widest mt-1">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#c6c6ce] opacity-60 hover:opacity-100 transition-opacity" href="#">
+<span class="material-symbols-outlined" data-icon="event_upcoming">event_upcoming</span>
+<span class="font-plus-jakarta text-[10px] font-medium uppercase tracking-widest mt-1">Sessions</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#c6c6ce] opacity-60 hover:opacity-100 transition-opacity" href="#">
+<span class="material-symbols-outlined" data-icon="layers">layers</span>
+<span class="font-plus-jakarta text-[10px] font-medium uppercase tracking-widest mt-1">Programs</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#c6c6ce] opacity-60 hover:opacity-100 transition-opacity" href="#">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+<span class="font-plus-jakarta text-[10px] font-medium uppercase tracking-widest mt-1">Members</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#e9c400] bg-[#e9c400]/10 rounded-xl px-3 py-1" href="#">
+<span class="material-symbols-outlined" data-icon="analytics">analytics</span>
+<span class="font-plus-jakarta text-[10px] font-medium uppercase tracking-widest mt-1">Reports</span>
+</a>
+</nav>
+</body></html>

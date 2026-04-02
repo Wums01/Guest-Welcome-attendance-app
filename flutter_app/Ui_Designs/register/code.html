@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#0f49bd",
+                        "accent": "#f59e0b",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#101622",
+                    },
+                    fontFamily: {
+                        "display": ["Plus Jakarta Sans"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<title>Register Member - Guest Welcome Attendance App</title>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 antialiased">
+<div class="relative flex h-auto min-h-screen w-full flex-col group/design-root overflow-x-hidden max-w-md mx-auto bg-white dark:bg-slate-900 shadow-xl">
+<!-- Top App Bar -->
+<div class="flex items-center p-4 pb-2 justify-between sticky top-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md z-10 border-b border-slate-200 dark:border-slate-800">
+<button class="text-slate-900 dark:text-slate-100 flex size-10 shrink-0 items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<h2 class="text-slate-900 dark:text-slate-100 text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center pr-10">Register Member</h2>
+</div>
+<div class="px-6 py-6">
+<div class="flex items-center gap-3 mb-2">
+<div class="bg-primary/10 p-2 rounded-lg">
+<span class="material-symbols-outlined text-primary">person_add</span>
+</div>
+<h3 class="text-slate-900 dark:text-white text-2xl font-bold leading-tight">New Member Details</h3>
+</div>
+<p class="text-slate-600 dark:text-slate-400 text-base font-normal leading-normal">
+                Join our ministry family. Please enter the information below to add a new member to the directory.
+            </p>
+</div>
+<form class="px-6 space-y-6 pb-24">
+<!-- Personal Info Card -->
+<div class="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700 shadow-sm space-y-4">
+<label class="flex flex-col w-full">
+<p class="text-slate-700 dark:text-slate-300 text-sm font-semibold leading-normal pb-1.5 px-1">Full Name</p>
+<input class="form-input flex w-full rounded-lg text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 focus:border-primary focus:ring-2 focus:ring-primary/20 h-12 placeholder:text-slate-400 text-base transition-all" placeholder="John Doe" type="text"/>
+</label>
+<label class="flex flex-col w-full">
+<p class="text-slate-700 dark:text-slate-300 text-sm font-semibold leading-normal pb-1.5 px-1">Phone Number</p>
+<input class="form-input flex w-full rounded-lg text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 focus:border-primary focus:ring-2 focus:ring-primary/20 h-12 placeholder:text-slate-400 text-base transition-all" placeholder="(555) 000-0000" type="tel"/>
+</label>
+<label class="flex flex-col w-full">
+<p class="text-slate-700 dark:text-slate-300 text-sm font-semibold leading-normal pb-1.5 px-1">Birthday</p>
+<div class="relative">
+<input class="form-input flex w-full rounded-lg text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 focus:border-primary focus:ring-2 focus:ring-primary/20 h-12 text-base transition-all" type="date"/>
+<span class="material-symbols-outlined absolute right-3 top-3 text-slate-400 pointer-events-none">cake</span>
+</div>
+</label>
+</div>
+<!-- Team Selection Group -->
+<div class="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700 shadow-sm">
+<p class="text-slate-700 dark:text-slate-300 text-sm font-semibold leading-normal pb-3 px-1 flex items-center gap-2">
+<span class="material-symbols-outlined text-accent text-lg">groups</span>
+                    Team Selection
+                </p>
+<div class="grid grid-cols-2 gap-3">
+<label class="cursor-pointer">
+<input checked="" class="peer hidden" name="team" type="radio"/>
+<div class="p-3 text-center border rounded-lg border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 peer-checked:border-primary peer-checked:bg-primary/10 peer-checked:text-primary transition-all">
+<span class="text-sm font-medium">None</span>
+</div>
+</label>
+<label class="cursor-pointer">
+<input class="peer hidden" name="team" type="radio"/>
+<div class="p-3 text-center border rounded-lg border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 peer-checked:border-primary peer-checked:bg-primary/10 peer-checked:text-primary transition-all">
+<span class="text-sm font-medium">Team A</span>
+</div>
+</label>
+<label class="cursor-pointer">
+<input class="peer hidden" name="team" type="radio"/>
+<div class="p-3 text-center border rounded-lg border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 peer-checked:border-primary peer-checked:bg-primary/10 peer-checked:text-primary transition-all">
+<span class="text-sm font-medium">Team B</span>
+</div>
+</label>
+<label class="cursor-pointer">
+<input class="peer hidden" name="team" type="radio"/>
+<div class="p-3 text-center border rounded-lg border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 peer-checked:border-primary peer-checked:bg-primary/10 peer-checked:text-primary transition-all">
+<span class="text-sm font-medium">Team C</span>
+</div>
+</label>
+</div>
+</div>
+<!-- Marital Status Section -->
+<div class="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700 shadow-sm space-y-4">
+<div class="flex items-center justify-between px-1">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-lg">favorite</span>
+<p class="text-slate-700 dark:text-slate-300 text-sm font-semibold">Married</p>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input class="sr-only peer" type="checkbox" value=""/>
+<div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
+</label>
+</div>
+<!-- Anniversary Field (Conditional Focus) -->
+<label class="flex flex-col w-full opacity-60 grayscale-[0.5]">
+<p class="text-slate-700 dark:text-slate-300 text-sm font-semibold leading-normal pb-1.5 px-1">Anniversary Date</p>
+<div class="relative">
+<input class="form-input flex w-full rounded-lg text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 focus:border-primary focus:ring-2 focus:ring-primary/20 h-12 text-base transition-all" type="date"/>
+<span class="material-symbols-outlined absolute right-3 top-3 text-slate-400 pointer-events-none">event</span>
+</div>
+<p class="text-[10px] text-slate-500 mt-1 px-1">Optional, used for celebrating with you!</p>
+</label>
+</div>
+</form>
+<!-- Fixed Footer Action -->
+<div class="fixed bottom-0 left-0 right-0 max-w-md mx-auto p-4 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm border-t border-slate-100 dark:border-slate-800">
+<button class="w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 rounded-xl shadow-lg shadow-primary/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2">
+<span class="material-symbols-outlined">how_to_reg</span>
+                Register Member
+            </button>
+</div>
+<!-- Padding for bottom button -->
+<div class="h-20 bg-background-light dark:bg-background-dark"></div>
+</div>
+</body></html>

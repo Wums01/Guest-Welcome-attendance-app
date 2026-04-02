@@ -1,36 +1,172 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Guest Welcome Attendance App
 
-## Getting Started
+A modern Flutter mobile and web application for managing guest attendance, member tracking, programs, and reports with real-time synchronization via Supabase.
 
-First, run the development server:
+## 📱 Platform Support
 
+- Android (native)
+- iOS (native)
+- Web (Chrome, Safari, etc.)
+- macOS
+- Windows
+- Linux
+
+## 🏗️ Project Structure
+
+```
+Guest-Welcome-attendance-app/
+├── flutter_app/              # Main Flutter application
+│   ├── lib/                  # Dart source code
+│   │   ├── app.dart          # App configuration
+│   │   ├── main.dart         # Entry point
+│   │   ├── router.dart       # Navigation routes
+│   │   ├── app_theme/        # UI theme
+│   │   ├── core/             # Core utilities (logging, config, date utils)
+│   │   ├── features/         # Feature modules (auth, home, sessions, etc.)
+│   │   ├── models/           # Data models and enums
+│   │   ├── providers/        # Riverpod state management
+│   │   ├── services/         # Business logic (API, database)
+│   │   └── widgets/          # Reusable UI components
+│   └── pubspec.yaml          # Dependencies
+├── supabase/                 # Backend & database
+│   ├── config.toml
+│   └── migrations/           # SQL migrations
+├── scripts/                  # Utility scripts
+├── docs/                     # Documentation
+├── reports/                  # Report outputs
+├── nextjs-backup.zip         # Legacy Next.js backup (archived)
+└── README.md
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- Flutter SDK 3.16+ ([Download](https://flutter.dev/docs/get-started/install))
+- Dart SDK (included with Flutter)
+- Supabase project setup
+
+### Setup Environment
+
+1. **Clone the repository:**
+   ```bash
+   git clone <repo-url>
+   cd Guest-Welcome-attendance-app
+   ```
+
+2. **Install Flutter dependencies:**
+   ```bash
+   cd flutter_app
+   flutter pub get
+   ```
+
+3. **Configure Supabase credentials:**
+   ```bash
+   cd flutter_app && flutter run \
+     --dart-define=SUPABASE_URL=https://your-project.supabase.co \
+     --dart-define=SUPABASE_ANON_KEY=your-anon-key
+   ```
+
+### Running the App
+
+**Android/iOS:**
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cd flutter_app
+flutter run
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+**Web:**
+```bash
+cd flutter_app
+flutter run -d chrome
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+**Desktop (macOS/Windows/Linux):**
+```bash
+cd flutter_app
+flutter run -d macos  # or windows, linux
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 📚 Features
 
-## Learn More
+- **Member Management** — Register, search, and manage members
+- **Attendance Tracking** — QR-based check-ins with real-time sync
+- **Programs** — Create and manage Sunday/Wednesday programs
+- **Sessions** — Manage service sessions with automatic generation
+- **Reports** — View attendance statistics, attendance trends, member reports
+- **Offline Support** — Works offline with SQLite, syncs when online
+- **Multi-team Support** — Team A, Team B, Team C with role-based access
+- **Real-time Updates** — Powered by Supabase RealtimeDatabase
 
-To learn more about Next.js, take a look at the following resources:
+## 🏭 Building for Production
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Android:
+```bash
+cd flutter_app
+flutter build apk --release
+# or for App Bundle:
+flutter build appbundle --release
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### iOS:
+```bash
+cd flutter_app
+flutter build ios --release
+```
 
-## Deploy on Vercel
+### Web:
+```bash
+cd flutter_app
+flutter build web --release
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 🔒 Security
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **Row-Level Security (RLS)** — Database queries protected by Supabase RLS policies
+- **Public Anon Key** — Safely used with RLS (credentials not sensitive)
+- **Test Mode** — Available in Settings for local testing without timing gates
+- **Offline-First** — Local SQLite cache before syncing to server
+
+## 📊 Database
+
+Managed via [Supabase](https://supabase.com):
+- Migrations located in `supabase/migrations/`
+- RLS policies protect all tables
+- Real-time subscriptions for live updates
+
+Apply migrations:
+```bash
+cd supabase
+supabase db push
+```
+
+## 🧪 Testing
+
+Unit tests available in `flutter_app/test/`
+
+```bash
+flutter test
+```
+
+## 📋 Scripts
+
+Located in `scripts/`:
+- `run_flutter_analyze.py` — Dart analysis
+- `push_migration.sh` — Deploy Supabase migrations
+- `run_analyze.sh` — Code analysis
+- `write_tests.py` — Test utilities
+
+## ⚙️ Configuration
+
+Environment variables (use `--dart-define`):
+- `SUPABASE_URL` — Your Supabase project URL
+- `SUPABASE_ANON_KEY` — Public anon key from Supabase
+
+## 📝 Notes
+
+- **Next.js legacy:** The original Next.js implementation has been archived (see `nextjs-backup.zip`)
+- **Production ready:** Debug features are disabled by default
+- **Test mode:** Toggle in Settings → Test Mode for development/testing
+
+## 📞 Support
+
+For issues or feature requests, please refer to the documentation in `docs/` or contact the development team.
