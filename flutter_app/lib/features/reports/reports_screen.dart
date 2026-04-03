@@ -316,12 +316,23 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
 
   Future<void> _shareBinaryFile(
       List<int> bytes, String filename, String subject, String mimeType) async {
+    // Get screen size before async operations
+    final screenSize = MediaQuery.of(context).size;
+    final shareRect = Rect.fromLTWH(
+      screenSize.width - 100, // Top-right area where the export button is
+      0,
+      100,
+      60,
+    );
+    
     final dir = await getTemporaryDirectory();
     final file = File('${dir.path}/$filename');
     await file.writeAsBytes(bytes, flush: true);
+    
     await Share.shareXFiles(
       [XFile(file.path, mimeType: mimeType)],
       subject: subject,
+      sharePositionOrigin: shareRect,
     );
   }
 
