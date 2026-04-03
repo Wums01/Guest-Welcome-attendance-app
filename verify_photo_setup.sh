@@ -1,4 +1,4 @@
-#!/bin/bash
+ #!/bin/bash
 # Photo Upload Setup Verification Script
 
 echo "==========================================="
