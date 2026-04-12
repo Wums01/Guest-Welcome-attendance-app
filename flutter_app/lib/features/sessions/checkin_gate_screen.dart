@@ -100,7 +100,6 @@ class _CheckinGateScreenState extends ConsumerState<CheckinGateScreen> {
 
     setState(() => _processing = true);
     try {
-      await _controller.stop();
       final clockIn =
           await ref.read(attendanceServiceProvider).clockInByOfflineCode(
             sessionId: widget.sessionId,
@@ -124,7 +123,6 @@ class _CheckinGateScreenState extends ConsumerState<CheckinGateScreen> {
       );
 
       if (!mounted) return;
-      await _controller.start();
       setState(() => _processing = false);
     } catch (e) {
       if (mounted) {
@@ -135,7 +133,6 @@ class _CheckinGateScreenState extends ConsumerState<CheckinGateScreen> {
             backgroundColor: AppTheme.error,
           ),
         );
-        await _controller.start();
         setState(() => _processing = false);
       }
     }

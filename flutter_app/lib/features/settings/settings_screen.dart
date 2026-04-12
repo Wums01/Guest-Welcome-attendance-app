@@ -144,6 +144,7 @@ class _StaffManagementCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final staffAsync = ref.watch(_staffProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final currentUser = ref.watch(currentStaffProvider).valueOrNull;
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -211,15 +212,22 @@ class _StaffManagementCard extends ConsumerWidget {
               }
               return Column(
                 children: staff
-                    .map((u) => _StaffTile(
-                          user: u,
-                          onDelete: () async {
-                            await ref
-                                .read(authServiceProvider)
-                                .deleteStaffUser(u.id);
-                            ref.invalidate(_staffProvider);
-                          },
-                        ))
+                    .map((u) {
+                      // Assistants may not delete team leads
+                      final canDelete = !(currentUser?.role == StaffRole.assistant &&
+                          u.role == StaffRole.teamLead);
+                      return _StaffTile(
+                        user: u,
+                        canDelete: canDelete,
+                        onDelete: () async {
+                          await ref
+                              .read(authServiceProvider)
+                              .deleteStaffUser(u.id,
+                                  callerRole: currentUser?.role);
+                          ref.invalidate(_staffProvider);
+                        },
+                      );
+                    })
                     .toList(),
               );
             },
@@ -246,10 +254,15 @@ class _StaffManagementCard extends ConsumerWidget {
 // ---------------------------------------------------------------------------
 
 class _StaffTile extends StatelessWidget {
-  const _StaffTile({required this.user, required this.onDelete});
+  const _StaffTile({
+    required this.user,
+    required this.onDelete,
+    this.canDelete = true,
+  });
 
   final StaffUser user;
   final VoidCallback onDelete;
+  final bool canDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -288,13 +301,14 @@ class _StaffTile extends StatelessWidget {
               ],
             ),
           ),
-          IconButton(
-            icon: const Icon(Icons.delete_outline_rounded,
-                size: 18, color: Color(0xFFCBD5E1)),
-            onPressed: () => _confirmDelete(context),
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-          ),
+          if (canDelete)
+            IconButton(
+              icon: const Icon(Icons.delete_outline_rounded,
+                  size: 18, color: Color(0xFFCBD5E1)),
+              onPressed: () => _confirmDelete(context),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+            ),
         ],
       ),
     );
