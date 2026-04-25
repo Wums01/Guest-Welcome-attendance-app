@@ -22,6 +22,7 @@ import 'package:supabase_flutter/supabase_flutter.dart' hide Session;
 import '../../models/enums.dart';
 import '../../models/session.dart';
 import '../../services/attendance_service.dart';
+import '../../services/member_service.dart';
 import '../../services/session_service.dart';
 import '../../app_theme/app_theme.dart';
 import '../../core/utils/date_utils.dart';
@@ -128,25 +129,36 @@ class _OfflineCheckinScreenState
     setState(() => _loading = true);
 
     try {
-      await ref.read(attendanceServiceProvider).clockInByOfflineCode(
+      final submittedCode = _code;
+      final clockIn =
+          await ref.read(attendanceServiceProvider).clockInByOfflineCode(
             sessionId: widget.sessionId,
-            code: _code,
+            code: submittedCode,
             status: AttendanceStatus.present,
           );
-
-      setState(() {
-        _feedback = _FeedbackState.success;
-        _message = 'Clock-in successful for code $_code.';
-      });
-
-      await Future.delayed(const Duration(milliseconds: 900));
-      if (mounted) {
-        setState(() {
-          _code = '';
-          _feedback = _FeedbackState.idle;
-          _message = '';
-        });
+      final member = await ref
+          .read(memberServiceProvider)
+          .getMemberByOfflineCode(submittedCode);
+      if (member == null) {
+        throw Exception('Member not found');
       }
+
+      if (!mounted) return;
+      await context.push(
+        '/verification',
+        extra: {
+          'member': member,
+          'entryTime': clockIn.clockedAt,
+          'status': clockIn.status,
+        },
+      );
+
+      if (!mounted) return;
+      setState(() {
+        _code = '';
+        _feedback = _FeedbackState.idle;
+        _message = '';
+      });
     } on Exception catch (e) {
       final msg = e.toString();
       if (msg.contains('Already marked')) {
@@ -205,7 +217,7 @@ class _OfflineCheckinScreenState
         child: sessionAsync.when(
           loading: () =>
               const Center(child: CircularProgressIndicator()),
-          error: (e, _) => Center(child: Text('Error: $e')),
+          error: (e, _) => const Center(child: Text('Unable to load. Please try again.')),
           data: (session) {
             if (session == null) {
               return Center(

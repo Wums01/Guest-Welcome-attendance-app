@@ -131,8 +131,8 @@ class _SessionDetailScreenState
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
+          const SnackBar(
+            content: Text('Unable to finalize absences. Please try again.'),
             backgroundColor: AppTheme.error,
           ),
         );

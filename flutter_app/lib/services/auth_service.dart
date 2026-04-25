@@ -63,9 +63,20 @@ class AuthService {
     }
   }
 
-  Future<void> deleteStaffUser(String id) async {
+  Future<void> deleteStaffUser(String id, {StaffRole? callerRole}) async {
     AppLogger.info(_tag, 'Deleting staff user: $id');
     try {
+      // Fetch target role to enforce permission rules
+      final row = await _client
+          .from('staff_users')
+          .select('role')
+          .eq('id', id)
+          .single();
+      final targetRole = StaffRole.fromValue(row['role'] as String);
+      if (callerRole == StaffRole.assistant &&
+          targetRole == StaffRole.teamLead) {
+        throw Exception('Assistants cannot delete team leads.');
+      }
       await _client.from('staff_users').delete().eq('id', id);
     } catch (e, st) {
       AppLogger.error(_tag, 'Failed to delete staff user', e, st);

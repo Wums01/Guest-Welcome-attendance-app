@@ -97,7 +97,7 @@ class _SessionRecoveryEdgeButtonState
       setState(() => _expanded = false);
     } catch (e) {
       if (!mounted) return;
-      _showMessage('Session recovery failed: $e', isError: true);
+      _showMessage('Unable to recover missing sessions. Please try again.', isError: true);
       setState(() => _expanded = true);
     } finally {
       if (mounted) {

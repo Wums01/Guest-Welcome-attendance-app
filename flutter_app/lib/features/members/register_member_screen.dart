@@ -138,7 +138,7 @@ class _RegisterMemberScreenState
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error picking photo: $e')),
+          const SnackBar(content: Text('Unable to select photo. Please try again.')),
         );
       }
     }
@@ -195,7 +195,7 @@ class _RegisterMemberScreenState
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: AppTheme.error),
+          const SnackBar(content: Text('Unable to register member. Please try again.'), backgroundColor: AppTheme.error),
         );
       }
     } finally {

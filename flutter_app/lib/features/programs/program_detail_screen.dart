@@ -67,7 +67,7 @@ class ProgramDetailScreen extends ConsumerWidget {
       ),
       body: programAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: $e')),
+        error: (e, _) => const Center(child: Text('Unable to load program details. Please try again.')),
         data: (program) {
           if (program == null) {
             return const Center(child: Text('Program not found.'));
@@ -235,8 +235,8 @@ class ProgramDetailScreen extends ConsumerWidget {
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text('Error: $e'),
+          const SnackBar(
+              content: Text('Unable to create Sunday sessions. Please try again.'),
               backgroundColor: AppTheme.error),
         );
       }
@@ -263,8 +263,8 @@ class ProgramDetailScreen extends ConsumerWidget {
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text('Error: $e'),
+          const SnackBar(
+              content: Text('Unable to create Wednesday session. Please try again.'),
               backgroundColor: AppTheme.error),
         );
       }
@@ -604,7 +604,7 @@ class _SessionRow extends ConsumerWidget {
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
+          const SnackBar(content: Text('Unable to update program. Please try again.')),
         );
       }
     }

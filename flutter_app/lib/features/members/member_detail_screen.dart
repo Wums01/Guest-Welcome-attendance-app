@@ -95,7 +95,7 @@ class MemberDetailScreen extends ConsumerWidget {
       ),
       body: memberAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: $e')),
+        error: (e, _) => const Center(child: Text('Unable to load member details. Please try again.')),
         data: (member) {
           if (member == null) {
             return const Center(child: Text('Member not found.'));
@@ -836,8 +836,8 @@ class _EditMemberSheetState
       );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text('Error: $e'),
+          const SnackBar(
+              content: Text('Unable to update member. Please try again.'),
               backgroundColor: AppTheme.error),
         );
       }
