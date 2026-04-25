@@ -12,6 +12,16 @@ const supabase = createClient(
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
 )
 
+function isStaleTokenError(status?: string, message?: string): boolean {
+  if (status === 'UNREGISTERED') return true
+  if (status !== 'INVALID_ARGUMENT') return false
+
+  const text = (message ?? '').toLowerCase()
+  return text.includes('registration token is not a valid fcm registration token')
+    || text.includes('requested entity was not found')
+    || text.includes('not a valid fcm registration token')
+}
+
 // Returns a short-lived OAuth2 access token for FCM HTTP v1 API
 async function getFcmAccessToken(): Promise<string> {
   const serviceAccountJson = Deno.env.get('FCM_SERVICE_ACCOUNT_JSON')!
@@ -75,6 +85,8 @@ Deno.serve(async (req) => {
     const projectId = Deno.env.get('FCM_PROJECT_ID')!
     const accessToken = await getFcmAccessToken()
     const staleTokens: string[] = []
+    const errors: Array<{ token: string; status?: string; message?: string }> = []
+    const results: Array<{ token: string; ok: boolean; status?: string; message?: string }> = []
     let sent = 0
 
     for (const token of tokens) {
@@ -91,6 +103,22 @@ Deno.serve(async (req) => {
               token,
               notification: { title, body },
               data: data ?? {},
+              android: {
+                priority: 'high',
+                notification: {
+                  sound: 'default',
+                },
+              },
+              apns: {
+                headers: {
+                  'apns-priority': '10',
+                },
+                payload: {
+                  aps: {
+                    sound: 'default',
+                  },
+                },
+              },
             },
           }),
         }
@@ -98,13 +126,22 @@ Deno.serve(async (req) => {
 
       if (res.ok) {
         sent++
+        results.push({ token, ok: true })
       } else {
-        const err = await res.json()
+        const err = await res.json().catch(() => ({}))
         const status = err?.error?.status
-        if (status === 'UNREGISTERED' || status === 'INVALID_ARGUMENT') {
+        const message = err?.error?.message as string | undefined
+        results.push({ token, ok: false, status, message })
+
+        if (isStaleTokenError(status, message)) {
           staleTokens.push(token)
         } else {
           console.error('FCM send error:', err)
+          errors.push({
+            token,
+            status,
+            message,
+          })
         }
       }
     }
@@ -115,7 +152,12 @@ Deno.serve(async (req) => {
       console.log(`Removed ${staleTokens.length} stale FCM tokens`)
     }
 
-    return new Response(JSON.stringify({ sent, stale: staleTokens.length }), {
+    return new Response(JSON.stringify({
+      sent,
+      stale: staleTokens.length,
+      errors,
+      results,
+    }), {
       headers: { 'Content-Type': 'application/json' },
     })
   } catch (err) {
