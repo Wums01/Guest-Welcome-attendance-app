@@ -62,6 +62,10 @@ google-services.json
 flutter_app/ios/Runner/GoogleService-Info.plist
 flutter_app/android/app/google-services.json
 *firebase-adminsdk*.json
+AuthKey_*.p8
+*.p8
+*.p12
+*.cer
 
 # Local project notes and generated reports
 *_REPORT.md
