@@ -14,3 +14,7 @@ final autoGenerateWeeklySessionsProvider = FutureProvider<int>((ref) async {
   final sessionService = ref.read(sessionServiceProvider);
   return sessionService.triggerAutoGenerateWeeklySessions();
 });
+
+/// Incremented whenever sessions are newly generated (by app resume or recovery
+/// button).  Screens watch this to know when to re-fetch their session data.
+final sessionRefreshSignalProvider = StateProvider<int>((_) => 0);

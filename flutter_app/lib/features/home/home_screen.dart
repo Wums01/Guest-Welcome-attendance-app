@@ -8,6 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../models/member.dart';
 import '../../models/session.dart';
 import '../../models/staff_user.dart';
+import '../../providers/session_generation_provider.dart';
 import '../../services/member_service.dart';
 import '../../services/session_service.dart';
 import '../../core/utils/date_utils.dart';
@@ -115,24 +116,37 @@ class HomeScreen extends ConsumerWidget {
     final todayFormatted = DateFormat('EEEE, MMMM d, y').format(lagosNow);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
+    // Re-fetch today's sessions whenever the recovery button or app-resume
+    // trigger creates new sessions.
+    ref.listen(sessionRefreshSignalProvider, (_, __) {
+      ref.invalidate(_todaySessionsProvider);
+      ref.invalidate(_upcomingSessionProvider);
+    });
+
+    // Screen-level safety net: if we're on a service day and no sessions exist,
+    // auto-generate immediately so staff never see an empty screen on Sunday or
+    // Wednesday.  Idempotent — safe to call even if sessions already exist.
+    ref.listen(_upcomingSessionProvider, (_, next) {
+      next.whenData((session) {
+        if (session != null) return; // sessions exist, nothing to do
+        final weekday = nowInLagos().weekday;
+        if (weekday != DateTime.sunday && weekday != DateTime.wednesday) return;
+        ref
+            .read(sessionServiceProvider)
+            .triggerAutoGenerateWeeklySessions()
+            .then((count) {
+          if (count > 0) {
+            ref.read(sessionRefreshSignalProvider.notifier).state++;
+            NotificationService.showWeeklySessionGenerationNotification(count);
+          }
+        });
+      });
+    });
+
     ref.listen(_absentMembersProvider, (_, next) {
       next.whenData((members) {
         if (members.isNotEmpty) {
           NotificationService.showAbsenceAlert(members);
-        }
-      });
-    });
-
-    ref.listen(_membersProvider, (_, next) {
-      next.whenData((members) {
-        final today = formatMMDD(nowInLagos());
-        for (final m in members) {
-          if (m.birthdayMD == today) {
-            NotificationService.showBirthdayNotification(m);
-          }
-          if (m.anniversaryMD != null && m.anniversaryMD == today) {
-            NotificationService.showAnniversaryNotification(m);
-          }
         }
       });
     });
@@ -1002,7 +1016,7 @@ class _FollowUpSection extends ConsumerWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('You need to be signed in to dismiss follow-up.'),
+            content: Text('You need to be signed in to log a follow-up.'),
             backgroundColor: AppTheme.error,
           ),
         );
@@ -1010,19 +1024,24 @@ class _FollowUpSection extends ConsumerWidget {
       return;
     }
 
+    final result = await _showFollowUpDialog(context, member);
+    if (result == null || !context.mounted) return;
+
     try {
-      await ref.read(attendanceServiceProvider).markFollowUpContacted(
+      await ref.read(attendanceServiceProvider).saveFollowUpAction(
             memberId: member.id,
             staffId: staff.id,
+            actionType: result.actionType,
+            note: result.note,
+            scheduledFollowUpAt: result.scheduledFollowUpAt,
+            outcomeNote: result.outcomeNote,
           );
       ref.invalidate(_absentMembersProvider);
 
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              '${member.fullName} removed from follow-up. Logged under ${staff.fullName}.',
-            ),
+            content: Text('Follow-up logged for ${member.fullName}.'),
             backgroundColor: AppTheme.success,
           ),
         );
@@ -1031,7 +1050,7 @@ class _FollowUpSection extends ConsumerWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Could not dismiss follow-up: $e'),
+            content: Text('Could not save follow-up: $e'),
             backgroundColor: AppTheme.error,
           ),
         );
@@ -1181,4 +1200,132 @@ class _TopMembersSection extends StatelessWidget {
       ],
     );
   }
+}
+
+// ── Follow-up dialog data ─────────────────────────────────────────────────────
+
+class _FollowUpResult {
+  const _FollowUpResult({
+    required this.actionType,
+    this.note,
+    this.scheduledFollowUpAt,
+    this.outcomeNote,
+  });
+  final String actionType;
+  final String? note;
+  final DateTime? scheduledFollowUpAt;
+  final String? outcomeNote;
+}
+
+Future<_FollowUpResult?> _showFollowUpDialog(
+  BuildContext context,
+  Member member,
+) async {
+  String selectedAction = 'contacted';
+  DateTime? scheduledDate;
+  final noteCtrl = TextEditingController();
+  final outcomeCtrl = TextEditingController();
+
+  const actions = [
+    ('contacted', 'Contacted'),
+    ('not_reachable', 'Not Reachable'),
+    ('returned', 'Returned to Church'),
+    ('transferred_out', 'Transferred Out'),
+    ('needs_visit', 'Needs a Visit'),
+  ];
+
+  return showDialog<_FollowUpResult>(
+    context: context,
+    builder: (ctx) => StatefulBuilder(
+      builder: (ctx, setState) => AlertDialog(
+        title: Text('Follow-up: ${member.fullName}'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Action taken:',
+                  style: TextStyle(fontWeight: FontWeight.w600)),
+              const SizedBox(height: 8),
+              DropdownButtonFormField<String>(
+                initialValue: selectedAction,
+                items: actions
+                    .map((a) => DropdownMenuItem(
+                          value: a.$1,
+                          child: Text(a.$2),
+                        ))
+                    .toList(),
+                onChanged: (v) => setState(() => selectedAction = v!),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: noteCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Note (optional)',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 2,
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: outcomeCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Outcome note (optional)',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 2,
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  const Text('Schedule next follow-up:',
+                      style: TextStyle(fontSize: 13)),
+                  const Spacer(),
+                  TextButton(
+                    onPressed: () async {
+                      final picked = await showDatePicker(
+                        context: ctx,
+                        initialDate:
+                            DateTime.now().add(const Duration(days: 7)),
+                        firstDate: DateTime.now(),
+                        lastDate: DateTime.now()
+                            .add(const Duration(days: 365)),
+                      );
+                      if (picked != null) {
+                        setState(() => scheduledDate = picked);
+                      }
+                    },
+                    child: Text(
+                      scheduledDate == null
+                          ? 'Pick date'
+                          : '${scheduledDate!.day}/${scheduledDate!.month}/${scheduledDate!.year}',
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(null),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(_FollowUpResult(
+              actionType: selectedAction,
+              note: noteCtrl.text.trim().isEmpty
+                  ? null
+                  : noteCtrl.text.trim(),
+              scheduledFollowUpAt: scheduledDate,
+              outcomeNote: outcomeCtrl.text.trim().isEmpty
+                  ? null
+                  : outcomeCtrl.text.trim(),
+            )),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    ),
+  );
 }

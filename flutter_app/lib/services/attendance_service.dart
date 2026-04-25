@@ -374,27 +374,36 @@ class AttendanceService {
     }
   }
 
-  /// Records that staff contacted a member and dismissed the current follow-up.
-  /// The member stays hidden until they attend a Sunday session again.
-  Future<void> markFollowUpContacted({
+  /// Records a follow-up action for an absent member.
+  /// [actionType] must be one of: contacted, not_reachable, returned,
+  /// transferred_out, needs_visit.
+  Future<void> saveFollowUpAction({
     required String memberId,
     required String staffId,
+    required String actionType,
     String? note,
+    DateTime? scheduledFollowUpAt,
+    String? outcomeNote,
   }) async {
     AppLogger.info(
       _tag,
-      'markFollowUpContacted(member=$memberId, staff=$staffId)',
+      'saveFollowUpAction(member=$memberId, type=$actionType)',
     );
     try {
       await _client.from(_followUpActionsTable).insert({
         'member_id': memberId,
-        'action': 'contacted',
+        'action_type': actionType,
         'created_by_staff_id': staffId,
         if (note != null && note.trim().isNotEmpty) 'note': note.trim(),
+        if (scheduledFollowUpAt != null)
+          'scheduled_follow_up_at':
+              scheduledFollowUpAt.toUtc().toIso8601String(),
+        if (outcomeNote != null && outcomeNote.trim().isNotEmpty)
+          'outcome_note': outcomeNote.trim(),
       });
-      AppLogger.info(_tag, 'markFollowUpContacted → action saved');
+      AppLogger.info(_tag, 'saveFollowUpAction → saved');
     } catch (e, s) {
-      AppLogger.error(_tag, 'markFollowUpContacted failed', e, s);
+      AppLogger.error(_tag, 'saveFollowUpAction failed', e, s);
       rethrow;
     }
   }

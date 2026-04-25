@@ -55,3 +55,22 @@ push_*.sh
 
 # Task management files
 tasks/todo.md
+
+# Firebase and platform credential files
+GoogleService-Info.plist
+google-services.json
+flutter_app/ios/Runner/GoogleService-Info.plist
+flutter_app/android/app/google-services.json
+*firebase-adminsdk*.json
+
+# Local project notes and generated reports
+*_REPORT.md
+PROJECT_UNDERSTANDING.md
+TEST_RESULTS*.md
+
+# Local verification/setup scripts
+quick-test.sh
+test-*.sh
+setup-function-schedule.js
+setup-schedule.mjs
+verify-schedule-setup.js

@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 
 import '../../models/program.dart';
 import '../../models/session.dart';
+import '../../providers/session_generation_provider.dart';
 import '../../services/program_service.dart';
 import '../../services/session_service.dart';
 import '../../services/attendance_service.dart';
@@ -163,6 +164,12 @@ class _ByDateTab extends ConsumerWidget {
     final sessionsAsync = ref.watch(_sessionsByDateProvider(selectedDate));
     final lagosNow = nowInLagos();
     final todayISO = formatDateISO(lagosNow);
+
+    // Re-fetch today's sessions whenever the recovery button or app-resume
+    // trigger creates new sessions.
+    ref.listen(sessionRefreshSignalProvider, (_, __) {
+      ref.invalidate(_sessionsByDateProvider(formatDateISO(nowInLagos())));
+    });
 
     String sectionLabel(String dateISO) {
       if (dateISO == todayISO) return 'TODAY';

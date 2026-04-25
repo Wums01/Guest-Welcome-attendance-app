@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../app_theme/app_theme.dart';
 import '../core/utils/date_utils.dart';
+import '../providers/session_generation_provider.dart';
 import '../services/session_service.dart';
 
 class SessionRecoveryEdgeButton extends ConsumerStatefulWidget {
@@ -94,6 +95,10 @@ class _SessionRecoveryEdgeButtonState
             ? 'Created $generatedCount session${generatedCount == 1 ? '' : 's'} for $_dayLabel.'
             : 'No missing $_dayLabel sessions were found.',
       );
+      // Bump the global signal so any screen watching it refreshes its list.
+      if (generatedCount > 0) {
+        ref.read(sessionRefreshSignalProvider.notifier).state++;
+      }
       setState(() => _expanded = false);
     } catch (e) {
       if (!mounted) return;

@@ -52,26 +52,12 @@ class NotificationService {
     }
   }
 
-  // ── Birthday / Anniversary ──────────────────────────────────────────────────
-
-  /// Show an immediate birthday notification for [member].
-  static Future<void> showBirthdayNotification(Member member) async {
-    AppLogger.info(_tag, 'showBirthdayNotification: ${member.fullName}');
+  /// Shows an in-app banner for a foreground FCM message.
+  static Future<void> showFcmBanner(String title, String body) async {
     await _plugin.show(
-      member.id.hashCode & 0x7FFFFFFF,
-      '🎂 Birthday Today!',
-      '${member.fullName} is celebrating their birthday today. Send them a warm welcome!',
-      _details(),
-    );
-  }
-
-  /// Show an immediate anniversary notification for [member].
-  static Future<void> showAnniversaryNotification(Member member) async {
-    AppLogger.info(_tag, 'showAnniversaryNotification: ${member.fullName}');
-    await _plugin.show(
-      (member.id.hashCode & 0x7FFFFFFF) + 1,
-      '💑 Anniversary Today!',
-      '${member.fullName} is celebrating their wedding anniversary today!',
+      DateTime.now().millisecondsSinceEpoch & 0x7FFFFFFF,
+      title,
+      body,
       _details(),
     );
   }
@@ -130,6 +116,11 @@ class NotificationService {
       priority: Priority.high,
       icon: '@mipmap/ic_launcher',
     );
-    return const NotificationDetails(android: android);
+    const ios = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+    );
+    return const NotificationDetails(android: android, iOS: ios);
   }
 }

@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/staff_user.dart';
 import '../services/auth_service.dart';
+import '../services/fcm_service.dart';
 
 // ---------------------------------------------------------------------------
 // Provider
@@ -43,10 +44,13 @@ class AuthNotifier extends StateNotifier<AsyncValue<StaffUser?>> {
     await _service.saveLastLogin(staffId); // record timestamp for 2-week check
     final user = await _service.getCurrentUser();
     state = AsyncValue.data(user);
+    // Register FCM token for this device so push notifications are delivered.
+    FcmService.initialize(staffId);
   }
 
   /// Clear the session and set state to null.
   Future<void> logout() async {
+    await FcmService.deleteToken();
     await _service.clearSession();
     state = const AsyncValue.data(null);
   }
