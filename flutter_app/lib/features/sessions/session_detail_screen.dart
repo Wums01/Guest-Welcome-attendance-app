@@ -43,17 +43,17 @@ class _ClockInEntry {
 // ---------------------------------------------------------------------------
 
 final _sessionDetailProvider =
-    FutureProvider.family<Session?, String>((ref, id) {
+    FutureProvider.autoDispose.family<Session?, String>((ref, id) {
   return ref.read(sessionServiceProvider).getSessionById(id);
 });
 
 final _clockInsProvider =
-    FutureProvider.family<List<ClockIn>, String>((ref, sessionId) {
+    FutureProvider.autoDispose.family<List<ClockIn>, String>((ref, sessionId) {
   return ref.read(attendanceServiceProvider).getClockInsBySession(sessionId);
 });
 
 final _clockInsWithMembersProvider =
-    FutureProvider.family<List<_ClockInEntry>, String>(
+    FutureProvider.autoDispose.family<List<_ClockInEntry>, String>(
         (ref, sessionId) async {
   final clockIns =
       await ref.read(attendanceServiceProvider).getClockInsBySession(sessionId);
@@ -66,7 +66,7 @@ final _clockInsWithMembersProvider =
 });
 
 final _sessionProgramProvider =
-    FutureProvider.family<Program?, String>((ref, programId) {
+    FutureProvider.autoDispose.family<Program?, String>((ref, programId) {
   return ref.read(programServiceProvider).getProgramById(programId);
 });
 

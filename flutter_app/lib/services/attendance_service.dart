@@ -201,12 +201,14 @@ class AttendanceService {
     }
 
     AppLogger.info(_tag, 'clockInByOfflineCode → resolved member: "${member.fullName}"');
-    return clockInMember(
+    final clockIn = await clockInMember(
       sessionId: sessionId,
       memberId: member.id,
       status: status,
       method: ClockInMethod.offlineCode,
     );
+    _notifyClockIn(member.fullName, sessionId);
+    return clockIn;
   }
 
   // ── finalizeSessionAbsences ───────────────────────────────────────────────
@@ -551,6 +553,7 @@ class AttendanceService {
         );
 
         // Return a pending clock-in record locally
+        _notifyClockIn(member.fullName, sessionId);
         return ClockIn(
           id: id,
           sessionId: sessionId,
@@ -571,6 +574,20 @@ class AttendanceService {
       code: code,
       status: status,
     );
+  }
+
+  /// Fire-and-forget: broadcasts a clock-in push notification to all staff.
+  void _notifyClockIn(String memberName, String sessionId) {
+    Future(() async {
+      try {
+        await _client.functions.invoke(
+          'notify-clock-in',
+          body: {'memberName': memberName, 'sessionId': sessionId},
+        );
+      } catch (e) {
+        AppLogger.warn(_tag, 'notify-clock-in push failed (non-critical): $e');
+      }
+    });
   }
 
   /// Check online status
