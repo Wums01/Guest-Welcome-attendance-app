@@ -7,6 +7,8 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../models/member.dart';
 import '../../models/session.dart';
+import '../../models/staff_user.dart';
+import '../../providers/session_generation_provider.dart';
 import '../../services/member_service.dart';
 import '../../services/session_service.dart';
 import '../../core/utils/date_utils.dart';
@@ -58,7 +60,7 @@ final _absentMembersProvider = FutureProvider<List<Member>>((ref) async {
   // Go back 14 days to cover 2 Sundays
   final since = now.subtract(const Duration(days: 14));
   final sinceDate = formatDateISO(since);
-  return ref.read(attendanceServiceProvider).getAbsentMembersSince(sinceDate);
+  return ref.read(attendanceServiceProvider).getActiveAbsentMembersSince(sinceDate);
 });
 
 // Top 3 members by present count this calendar month
@@ -114,24 +116,37 @@ class HomeScreen extends ConsumerWidget {
     final todayFormatted = DateFormat('EEEE, MMMM d, y').format(lagosNow);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
+    // Re-fetch today's sessions whenever the recovery button or app-resume
+    // trigger creates new sessions.
+    ref.listen(sessionRefreshSignalProvider, (_, __) {
+      ref.invalidate(_todaySessionsProvider);
+      ref.invalidate(_upcomingSessionProvider);
+    });
+
+    // Screen-level safety net: if we're on a service day and no sessions exist,
+    // auto-generate immediately so staff never see an empty screen on Sunday or
+    // Wednesday.  Idempotent — safe to call even if sessions already exist.
+    ref.listen(_upcomingSessionProvider, (_, next) {
+      next.whenData((session) {
+        if (session != null) return; // sessions exist, nothing to do
+        final weekday = nowInLagos().weekday;
+        if (weekday != DateTime.sunday && weekday != DateTime.wednesday) return;
+        ref
+            .read(sessionServiceProvider)
+            .triggerAutoGenerateWeeklySessions()
+            .then((count) {
+          if (count > 0) {
+            ref.read(sessionRefreshSignalProvider.notifier).state++;
+            NotificationService.showWeeklySessionGenerationNotification(count);
+          }
+        });
+      });
+    });
+
     ref.listen(_absentMembersProvider, (_, next) {
       next.whenData((members) {
         if (members.isNotEmpty) {
           NotificationService.showAbsenceAlert(members);
-        }
-      });
-    });
-
-    ref.listen(_membersProvider, (_, next) {
-      next.whenData((members) {
-        final today = formatMMDD(nowInLagos());
-        for (final m in members) {
-          if (m.birthdayMD == today) {
-            NotificationService.showBirthdayNotification(m);
-          }
-          if (m.anniversaryMD != null && m.anniversaryMD == today) {
-            NotificationService.showAnniversaryNotification(m);
-          }
         }
       });
     });
@@ -410,7 +425,10 @@ class HomeScreen extends ConsumerWidget {
           Consumer(builder: (ctx, ref, _) {
             final absentAsync = ref.watch(_absentMembersProvider);
             return absentAsync.maybeWhen(
-              data: (members) => _FollowUpSection(members: members),
+              data: (members) => _FollowUpSection(
+                members: members,
+                currentStaff: staff,
+              ),
               orElse: () => const SizedBox.shrink(),
             );
           }),
@@ -772,12 +790,17 @@ class _CelebrationCard extends StatelessWidget {
 
 // ── _FollowUpSection ──────────────────────────────────────────────────────────
 
-class _FollowUpSection extends StatelessWidget {
-  const _FollowUpSection({required this.members});
+class _FollowUpSection extends ConsumerWidget {
+  const _FollowUpSection({
+    required this.members,
+    required this.currentStaff,
+  });
+
   final List<Member> members;
+  final StaffUser? currentStaff;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     if (members.isEmpty) return const SizedBox.shrink();
     return Column(
@@ -842,17 +865,14 @@ class _FollowUpSection extends StatelessWidget {
                       ],
                     ),
                   ),
-                  if (m.phone.isNotEmpty)
+                  if (m.phone.isNotEmpty) ...[
                     GestureDetector(
-                      onTap: () async {
-                        final uri = Uri.parse('tel:${m.phone}');
-                        if (await canLaunchUrl(uri)) {
-                          await launchUrl(uri);
-                        }
-                      },
+                      onTap: () => _handleCall(context, ref, m),
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 6),
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
                         decoration: BoxDecoration(
                           color: AppTheme.error,
                           borderRadius: BorderRadius.circular(8),
@@ -860,12 +880,41 @@ class _FollowUpSection extends StatelessWidget {
                         child: const Text(
                           'Call',
                           style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600),
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                     ),
+                    const SizedBox(width: 8),
+                  ],
+                  GestureDetector(
+                    onTap: () => _confirmMarkContacted(context, ref, m),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? AppTheme.darkSurface
+                            : Colors.white.withValues(alpha: 0.92),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: AppTheme.error.withValues(alpha: 0.28),
+                        ),
+                      ),
+                      child: Text(
+                        'Done',
+                        style: TextStyle(
+                          color: isDark ? Colors.white : AppTheme.error,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             );
@@ -874,6 +923,139 @@ class _FollowUpSection extends StatelessWidget {
         const SizedBox(height: 16),
       ],
     );
+  }
+
+  Future<void> _handleCall(
+    BuildContext context,
+    WidgetRef ref,
+    Member member,
+  ) async {
+    final uri = Uri(scheme: 'tel', path: member.phone);
+    if (!await canLaunchUrl(uri)) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Unable to open the phone dialer on this device.'),
+            backgroundColor: AppTheme.error,
+          ),
+        );
+      }
+      return;
+    }
+
+    await launchUrl(uri);
+    if (!context.mounted) return;
+
+    final shouldDismiss = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Mark follow-up as contacted?'),
+        content: Text(
+          'Remove ${member.fullName} from follow-up for now and log '
+          '${currentStaff?.fullName ?? 'the current staff user'} as the person who dismissed it?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Not yet'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Mark contacted'),
+          ),
+        ],
+      ),
+    );
+
+    if (!context.mounted) return;
+    if (shouldDismiss == true) {
+      await _markContacted(context, ref, member);
+    }
+  }
+
+  Future<void> _confirmMarkContacted(
+    BuildContext context,
+    WidgetRef ref,
+    Member member,
+  ) async {
+    final shouldDismiss = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Dismiss follow-up?'),
+        content: Text(
+          'This removes ${member.fullName} from the follow-up list until they '
+          'attend again. The dismissal will be logged under '
+          '${currentStaff?.fullName ?? 'the current staff user'}.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Dismiss'),
+          ),
+        ],
+      ),
+    );
+
+    if (!context.mounted) return;
+    if (shouldDismiss == true) {
+      await _markContacted(context, ref, member);
+    }
+  }
+
+  Future<void> _markContacted(
+    BuildContext context,
+    WidgetRef ref,
+    Member member,
+  ) async {
+    final staff = currentStaff;
+    if (staff == null) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('You need to be signed in to log a follow-up.'),
+            backgroundColor: AppTheme.error,
+          ),
+        );
+      }
+      return;
+    }
+
+    final result = await _showFollowUpDialog(context, member);
+    if (result == null || !context.mounted) return;
+
+    try {
+      await ref.read(attendanceServiceProvider).saveFollowUpAction(
+            memberId: member.id,
+            staffId: staff.id,
+            actionType: result.actionType,
+            note: result.note,
+            scheduledFollowUpAt: result.scheduledFollowUpAt,
+            outcomeNote: result.outcomeNote,
+          );
+      ref.invalidate(_absentMembersProvider);
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Follow-up logged for ${member.fullName}.'),
+            backgroundColor: AppTheme.success,
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Could not save follow-up: $e'),
+            backgroundColor: AppTheme.error,
+          ),
+        );
+      }
+    }
   }
 }
 
@@ -1018,4 +1200,132 @@ class _TopMembersSection extends StatelessWidget {
       ],
     );
   }
+}
+
+// ── Follow-up dialog data ─────────────────────────────────────────────────────
+
+class _FollowUpResult {
+  const _FollowUpResult({
+    required this.actionType,
+    this.note,
+    this.scheduledFollowUpAt,
+    this.outcomeNote,
+  });
+  final String actionType;
+  final String? note;
+  final DateTime? scheduledFollowUpAt;
+  final String? outcomeNote;
+}
+
+Future<_FollowUpResult?> _showFollowUpDialog(
+  BuildContext context,
+  Member member,
+) async {
+  String selectedAction = 'contacted';
+  DateTime? scheduledDate;
+  final noteCtrl = TextEditingController();
+  final outcomeCtrl = TextEditingController();
+
+  const actions = [
+    ('contacted', 'Contacted'),
+    ('not_reachable', 'Not Reachable'),
+    ('returned', 'Returned to Church'),
+    ('transferred_out', 'Transferred Out'),
+    ('needs_visit', 'Needs a Visit'),
+  ];
+
+  return showDialog<_FollowUpResult>(
+    context: context,
+    builder: (ctx) => StatefulBuilder(
+      builder: (ctx, setState) => AlertDialog(
+        title: Text('Follow-up: ${member.fullName}'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Action taken:',
+                  style: TextStyle(fontWeight: FontWeight.w600)),
+              const SizedBox(height: 8),
+              DropdownButtonFormField<String>(
+                initialValue: selectedAction,
+                items: actions
+                    .map((a) => DropdownMenuItem(
+                          value: a.$1,
+                          child: Text(a.$2),
+                        ))
+                    .toList(),
+                onChanged: (v) => setState(() => selectedAction = v!),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: noteCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Note (optional)',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 2,
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: outcomeCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Outcome note (optional)',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 2,
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  const Text('Schedule next follow-up:',
+                      style: TextStyle(fontSize: 13)),
+                  const Spacer(),
+                  TextButton(
+                    onPressed: () async {
+                      final picked = await showDatePicker(
+                        context: ctx,
+                        initialDate:
+                            DateTime.now().add(const Duration(days: 7)),
+                        firstDate: DateTime.now(),
+                        lastDate: DateTime.now()
+                            .add(const Duration(days: 365)),
+                      );
+                      if (picked != null) {
+                        setState(() => scheduledDate = picked);
+                      }
+                    },
+                    child: Text(
+                      scheduledDate == null
+                          ? 'Pick date'
+                          : '${scheduledDate!.day}/${scheduledDate!.month}/${scheduledDate!.year}',
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(null),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(_FollowUpResult(
+              actionType: selectedAction,
+              note: noteCtrl.text.trim().isEmpty
+                  ? null
+                  : noteCtrl.text.trim(),
+              scheduledFollowUpAt: scheduledDate,
+              outcomeNote: outcomeCtrl.text.trim().isEmpty
+                  ? null
+                  : outcomeCtrl.text.trim(),
+            )),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    ),
+  );
 }

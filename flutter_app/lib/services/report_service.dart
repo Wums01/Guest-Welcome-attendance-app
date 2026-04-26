@@ -58,7 +58,7 @@ class ReportService {
   // ── Monthly leaderboard ───────────────────────────────────────────────────
 
   /// Returns the attendance leaderboard for [yearMonth] (format: "YYYY-MM"),
-  /// sorted by present_count descending, with rank assigned.
+  /// sorted by total_points descending, with rank assigned.
   Future<List<LeaderboardEntry>> getMonthlyLeaderboard(
       String yearMonth) async {
     AppLogger.info(_tag, 'getMonthlyLeaderboard($yearMonth)');
@@ -67,7 +67,8 @@ class ReportService {
           .from('monthly_leaderboard')
           .select()
           .eq('year_month', yearMonth)
-          .order('present_count', ascending: false);
+          .order('total_points', ascending: false)
+          .order('full_name', ascending: true);
 
       final entries = (data as List)
           .asMap()
@@ -88,35 +89,23 @@ class ReportService {
   Future<List<LeaderboardEntry>> getYearlyLeaderboard(String year) async {
     AppLogger.info(_tag, 'getYearlyLeaderboard($year)');
     try {
+      // Use a DB view for yearly aggregation for performance and determinism.
       final data = await _client
-          .from('monthly_leaderboard')
+          .from('yearly_leaderboard')
           .select()
-          .like('year_month', '$year%');
+          .eq('year', year)
+          .order('total_points', ascending: false)
+          .order('full_name', ascending: true);
 
-      // Aggregate present_count per member across all months
-      final Map<String, Map<String, dynamic>> aggregated = {};
-      for (final row in data as List) {
-        final id = row['member_id'] as String;
-        if (aggregated.containsKey(id)) {
-          aggregated[id]!['present_count'] =
-              (aggregated[id]!['present_count'] as int) +
-                  ((row['present_count'] as num?)?.toInt() ?? 0);
-        } else {
-          aggregated[id] = Map<String, dynamic>.from(row);
-          // Use the year as the year_month label
-          aggregated[id]!['year_month'] = year;
-        }
-      }
-
-      final sorted = aggregated.values.toList()
-        ..sort((a, b) => (b['present_count'] as int)
-            .compareTo(a['present_count'] as int));
-
-      final entries = sorted
+      final entries = (data as List)
           .asMap()
           .entries
-          .map((e) => LeaderboardEntry.fromJson(e.value, rank: e.key + 1))
-          .toList();
+          .map((e) {
+        // Ensure `year_month` is populated for the LeaderboardEntry model
+        final row = Map<String, dynamic>.from(e.value);
+        row['year_month'] = year;
+        return LeaderboardEntry.fromJson(row, rank: e.key + 1);
+      }).toList();
       AppLogger.info(_tag, 'getYearlyLeaderboard($year) → ${entries.length} entries');
       return entries;
     } catch (e, stack) {

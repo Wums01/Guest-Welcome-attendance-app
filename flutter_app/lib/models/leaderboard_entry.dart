@@ -13,6 +13,7 @@ class LeaderboardEntry {
     required this.team,
     required this.offlineCode,
     required this.presentCount,
+    required this.totalPoints,
     required this.yearMonth,
   });
 
@@ -22,18 +23,24 @@ class LeaderboardEntry {
   final Team team;
   final String offlineCode;
   final int presentCount;
+  final int totalPoints;
 
   /// Format: "YYYY-MM"
   final String yearMonth;
 
-  factory LeaderboardEntry.fromJson(Map<String, dynamic> json, {int rank = 0}) {
+  factory LeaderboardEntry.fromJson(Map<String, dynamic> json,
+      {int rank = 0}) {
+    final presentCount =
+        (json['present_count'] as num?)?.toInt() ?? 0;
     return LeaderboardEntry(
       rank: rank,
       memberId: json['member_id'] as String,
       memberName: json['full_name'] as String,
-      team: Team.fromValue(json['team'] as String),
+      team: Team.fromValue((json['team'] as String?) ?? 'None'),
       offlineCode: json['offline_code'] as String,
-      presentCount: (json['present_count'] as num?)?.toInt() ?? 0,
+      presentCount: presentCount,
+      totalPoints:
+          (json['total_points'] as num?)?.toInt() ?? presentCount,
       yearMonth: json['year_month'] as String,
     );
   }

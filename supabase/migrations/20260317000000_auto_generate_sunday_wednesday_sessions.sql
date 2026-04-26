@@ -1,17 +1,12 @@
 -- =============================================================================
 -- Auto-generate Sunday & Wednesday sessions at midnight (Lagos timezone)
 -- =============================================================================
--- This migration creates a function that automatically generates sessions for
+-- This migration creates a PL/pgSQL function that automatically generates sessions for
 -- Sunday and Wednesday programs at 12 AM Lagos time each day.
 --
--- Since Supabase pg_cron may not be available on all plans, this function
--- is designed to be called:
---   1. Via pg_cron scheduler (if available in your Supabase plan)
---   2. Via the Flutter app startup (fallback mechanism)
+-- This function is called via a Supabase Edge Function (supabase/functions/generate-sessions)
+-- which is scheduled with proper cron support that works on all Supabase plans.
 -- =============================================================================
-
--- Enable pg_cron extension (this will fail silently if already enabled)
-CREATE EXTENSION IF NOT EXISTS pg_cron;
 
 -- =============================================================================
 -- FUNCTION: auto_generate_weekly_sessions
@@ -114,25 +109,21 @@ GRANT EXECUTE ON FUNCTION public.auto_generate_weekly_sessions()
   TO anon, authenticated;
 
 -- =============================================================================
--- SCHEDULE: Call auto_generate_weekly_sessions every morning at midnight Lagos time
+-- SCHEDULING: Server-side scheduling via Supabase Edge Function
 -- =============================================================================
--- This uses pg_cron if available. The schedule string is in UTC since pg_cron runs in UTC.
--- Lagos is UTC+1, so midnight in Lagos = 23:00 UTC on the previous day.
--- We schedule it for 23:00 UTC (0 23 * * *)
+-- ⚠️  DO NOT USE pg_cron (invalid syntax and unavailable on free tier)
 --
--- Alternatively, you can call this function manually from the app:
+-- Instead, use the Supabase Edge Function: generate-sessions
+--   Location: supabase/functions/generate-sessions/index.ts
+--   Schedule:  0 23 * * *  (every day at 23:00 UTC = 00:00 Lagos time)
+--   Reason:    Works on all Supabase plans (free & paid)
+--
+-- The Edge Function:
+--   1. Runs reliably on all Supabase plans
+--   2. Executes with proper Nigeria timezone handling
+--   3. Calls this PL/pgSQL function via RPC
+--   4. Logs execution and results for debugging
+--
+-- MANUAL TRIGGER (for testing or emergency):
 --   SELECT * FROM public.auto_generate_weekly_sessions();
 -- =============================================================================
-
--- Drop existing schedule if it exists (prevents errors on re-run)
-SELECT cron.unschedule('auto-generate-weekly-sessions')
-WHERE EXISTS (
-  SELECT 1 FROM cron.job WHERE jobname = 'auto-generate-weekly-sessions'
-);
-
--- Schedule the function (this will fail gracefully if pg_cron not available)
-SELECT cron.schedule(
-  'auto-generate-weekly-sessions',
-  '0 23 * * *',  -- Every day at 23:00 UTC (= 00:00 Lagos time)
-  'SELECT public.auto_generate_weekly_sessions();'
-);

@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 
 import '../../models/program.dart';
 import '../../models/session.dart';
+import '../../providers/session_generation_provider.dart';
 import '../../services/program_service.dart';
 import '../../services/session_service.dart';
 import '../../services/attendance_service.dart';
@@ -164,6 +165,12 @@ class _ByDateTab extends ConsumerWidget {
     final lagosNow = nowInLagos();
     final todayISO = formatDateISO(lagosNow);
 
+    // Re-fetch today's sessions whenever the recovery button or app-resume
+    // trigger creates new sessions.
+    ref.listen(sessionRefreshSignalProvider, (_, __) {
+      ref.invalidate(_sessionsByDateProvider(formatDateISO(nowInLagos())));
+    });
+
     String sectionLabel(String dateISO) {
       if (dateISO == todayISO) return 'TODAY';
       final d = parseDateISO(dateISO);
@@ -247,7 +254,7 @@ class _ByDateTab extends ConsumerWidget {
           Expanded(
             child: sessionsAsync.when(
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Center(child: Text('Error: $e')),
+              error: (e, _) => const Center(child: Text('Unable to load sessions. Please try again.')),
               data: (sessions) {
                 final filtered = query.isEmpty
                     ? sessions
@@ -392,9 +399,9 @@ class _ProgramAccordion extends ConsumerWidget {
                 padding: EdgeInsets.all(16),
                 child: Center(child: CircularProgressIndicator()),
               ),
-              error: (e, _) => Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text('Error: $e'),
+              error: (e, _) => const Padding(
+                padding: EdgeInsets.all(16),
+                child: Text('Unable to delete session. Please try again.'),
               ),
               data: (sessions) {
                 if (sessions.isEmpty) {

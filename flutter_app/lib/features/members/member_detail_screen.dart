@@ -22,8 +22,10 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../models/member.dart';
 import '../../models/clock_in.dart';
 import '../../models/enums.dart';
+import '../../models/achievement.dart';
 import '../../services/member_service.dart';
 import '../../services/attendance_service.dart';
+import '../../services/achievement_service.dart';
 import '../../services/image_storage_service.dart';
 import '../../app_theme/app_theme.dart';
 import '../../widgets/avatar_widget.dart';
@@ -43,6 +45,11 @@ final _memberDetailProvider =
 final _memberClockInsProvider =
     FutureProvider.family<List<ClockIn>, String>((ref, id) {
   return ref.read(attendanceServiceProvider).getClockInsByMember(id);
+});
+
+final _memberAchievementsProvider =
+    FutureProvider.family<List<Achievement>, String>((ref, memberId) {
+  return ref.read(achievementServiceProvider).getAchievementsForMember(memberId);
 });
 
 // ---------------------------------------------------------------------------
@@ -95,7 +102,7 @@ class MemberDetailScreen extends ConsumerWidget {
       ),
       body: memberAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: $e')),
+        error: (e, _) => const Center(child: Text('Unable to load member details. Please try again.')),
         data: (member) {
           if (member == null) {
             return const Center(child: Text('Member not found.'));
@@ -163,6 +170,9 @@ class MemberDetailScreen extends ConsumerWidget {
                     );
                   },
                 ),
+
+                // ── Achievements ───────────────────────────────────────────
+                _AchievementsSection(memberId: memberId),
               ],
             ),
           );
@@ -836,8 +846,8 @@ class _EditMemberSheetState
       );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text('Error: $e'),
+          const SnackBar(
+              content: Text('Unable to update member. Please try again.'),
               backgroundColor: AppTheme.error),
         );
       }
@@ -1061,6 +1071,65 @@ class _EditMemberSheetState
           ],
         ),
       ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// _AchievementsSection
+// ---------------------------------------------------------------------------
+
+class _AchievementsSection extends ConsumerWidget {
+  const _AchievementsSection({required this.memberId});
+  final String memberId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final achievementsAsync =
+        ref.watch(_memberAchievementsProvider(memberId));
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return achievementsAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (achievements) {
+        if (achievements.isEmpty) return const SizedBox.shrink();
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 20),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Text(
+                'Achievements',
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                  color: isDark
+                      ? Colors.white
+                      : const Color(0xFF0F172A),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: achievements
+                    .map((a) => Chip(
+                          avatar: Text(a.emoji,
+                              style: const TextStyle(fontSize: 14)),
+                          label: Text(a.label,
+                              style: const TextStyle(fontSize: 12)),
+                        ))
+                    .toList(),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

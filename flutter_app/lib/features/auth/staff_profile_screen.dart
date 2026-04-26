@@ -171,7 +171,7 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
       );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Upload failed: $e')),
+          const SnackBar(content: Text('Unable to update photo. Please try again.')),
         );
       }
     } finally {
@@ -198,7 +198,7 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to update name: $e')),
+          const SnackBar(content: Text('Unable to update name. Please try again.')),
         );
       }
     } finally {
@@ -241,7 +241,7 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to update password: $e')),
+          const SnackBar(content: Text('Unable to update password. Please try again.')),
         );
       }
     } finally {

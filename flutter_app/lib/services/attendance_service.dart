@@ -19,6 +19,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:uuid/uuid.dart';
 
 import '../models/clock_in.dart';
+import '../models/follow_up_action.dart';
 import '../models/member.dart';
 import '../models/enums.dart';
 import '../core/logger.dart';
@@ -47,6 +48,7 @@ class AttendanceService {
   final MemberService _memberService;
 
   static const _table = 'clock_ins';
+  static const _followUpActionsTable = 'member_follow_up_actions';
   static const _tag = 'AttendanceService';
 
   // ── Read ──────────────────────────────────────────────────────────────────
@@ -189,22 +191,24 @@ class AttendanceService {
     if (status == AttendanceStatus.absent) {
       AppLogger.warn(_tag, 'clockInByOfflineCode → rejected: absent status via code');
       throw Exception(
-          "Invalid status: 'absent' cannot be set via offline code.");
+          "This status cannot be used with the offline code.");
     }
 
     final member = await _memberService.getMemberByOfflineCode(code);
     if (member == null) {
       AppLogger.warn(_tag, 'clockInByOfflineCode → member not found for code $code');
-      throw Exception('Member not found');
+      throw Exception('The code entered does not match any member. Please check and try again.');
     }
 
     AppLogger.info(_tag, 'clockInByOfflineCode → resolved member: "${member.fullName}"');
-    return clockInMember(
+    final clockIn = await clockInMember(
       sessionId: sessionId,
       memberId: member.id,
       status: status,
       method: ClockInMethod.offlineCode,
     );
+    _notifyClockIn(member.fullName, sessionId);
+    return clockIn;
   }
 
   // ── finalizeSessionAbsences ───────────────────────────────────────────────
@@ -293,15 +297,7 @@ class AttendanceService {
   Future<List<Member>> getAbsentMembersSince(String sinceDate) async {
     AppLogger.info(_tag, 'getAbsentMembersSince($sinceDate)');
     try {
-      // Get all Sunday sessions since sinceDate
-      final sessionsData = await _client
-          .from('sessions')
-          .select('id')
-          .gte('date', sinceDate)
-          .or('name.ilike.%Service 1%,name.ilike.%Service 2%,name.ilike.%Service 3%');
-      final sessionIds = (sessionsData as List)
-          .map((s) => s['id'] as String)
-          .toList();
+      final sessionIds = await _getSundaySessionIds(sinceDate: sinceDate);
 
       if (sessionIds.isEmpty) {
         AppLogger.info(_tag, 'getAbsentMembersSince → no Sunday sessions found since $sinceDate');
@@ -330,6 +326,86 @@ class AttendanceService {
       return absent;
     } catch (e, s) {
       AppLogger.error(_tag, 'getAbsentMembersSince($sinceDate) failed', e, s);
+      rethrow;
+    }
+  }
+
+  /// Returns members who still need follow-up after excluding members whose
+  /// current absence streak has already been marked as contacted by staff.
+  Future<List<Member>> getActiveAbsentMembersSince(String sinceDate) async {
+    AppLogger.info(_tag, 'getActiveAbsentMembersSince($sinceDate)');
+    try {
+      final absentMembers = await getAbsentMembersSince(sinceDate);
+      if (absentMembers.isEmpty) {
+        return [];
+      }
+
+      final latestActions =
+          await _getLatestFollowUpActions(absentMembers.map((m) => m.id).toList());
+      if (latestActions.isEmpty) {
+        AppLogger.info(_tag, 'getActiveAbsentMembersSince → no follow-up actions yet');
+        return absentMembers;
+      }
+
+      final sundaySessionIds = await _getSundaySessionIds();
+      final accountedAfterAction = await _getLatestAccountedSundayClockIns(
+        memberIds: latestActions.keys.toList(),
+        sundaySessionIds: sundaySessionIds,
+      );
+
+      final active = absentMembers.where((member) {
+        final latestAction = latestActions[member.id];
+        if (latestAction == null) return true;
+
+        final latestAttendance = accountedAfterAction[member.id];
+        if (latestAttendance == null) {
+          return false;
+        }
+
+        return latestAttendance.isAfter(latestAction.createdAt);
+      }).toList();
+
+      AppLogger.info(
+        _tag,
+        'getActiveAbsentMembersSince → ${active.length} active follow-up members',
+      );
+      return active;
+    } catch (e, s) {
+      AppLogger.error(_tag, 'getActiveAbsentMembersSince($sinceDate) failed', e, s);
+      rethrow;
+    }
+  }
+
+  /// Records a follow-up action for an absent member.
+  /// [actionType] must be one of: contacted, not_reachable, returned,
+  /// transferred_out, needs_visit.
+  Future<void> saveFollowUpAction({
+    required String memberId,
+    required String staffId,
+    required String actionType,
+    String? note,
+    DateTime? scheduledFollowUpAt,
+    String? outcomeNote,
+  }) async {
+    AppLogger.info(
+      _tag,
+      'saveFollowUpAction(member=$memberId, type=$actionType)',
+    );
+    try {
+      await _client.from(_followUpActionsTable).insert({
+        'member_id': memberId,
+        'action_type': actionType,
+        'created_by_staff_id': staffId,
+        if (note != null && note.trim().isNotEmpty) 'note': note.trim(),
+        if (scheduledFollowUpAt != null)
+          'scheduled_follow_up_at':
+              scheduledFollowUpAt.toUtc().toIso8601String(),
+        if (outcomeNote != null && outcomeNote.trim().isNotEmpty)
+          'outcome_note': outcomeNote.trim(),
+      });
+      AppLogger.info(_tag, 'saveFollowUpAction → saved');
+    } catch (e, s) {
+      AppLogger.error(_tag, 'saveFollowUpAction failed', e, s);
       rethrow;
     }
   }
@@ -381,6 +457,63 @@ class AttendanceService {
     return null;
   }
 
+  Future<List<String>> _getSundaySessionIds({String? sinceDate}) async {
+    final query = _client
+        .from('sessions')
+        .select('id')
+        .or('name.ilike.%Service 1%,name.ilike.%Service 2%,name.ilike.%Service 3%');
+
+    final data = sinceDate == null ? await query : await query.gte('date', sinceDate);
+    return (data as List).map((s) => s['id'] as String).toList();
+  }
+
+  Future<Map<String, FollowUpAction>> _getLatestFollowUpActions(
+    List<String> memberIds,
+  ) async {
+    if (memberIds.isEmpty) return <String, FollowUpAction>{};
+
+    final data = await _client
+        .from(_followUpActionsTable)
+        .select()
+        .inFilter('member_id', memberIds)
+        .order('created_at', ascending: false);
+
+    final latest = <String, FollowUpAction>{};
+    for (final row in data as List) {
+      final action = FollowUpAction.fromJson(row as Map<String, dynamic>);
+      latest.putIfAbsent(action.memberId, () => action);
+    }
+    return latest;
+  }
+
+  Future<Map<String, DateTime>> _getLatestAccountedSundayClockIns({
+    required List<String> memberIds,
+    required List<String> sundaySessionIds,
+  }) async {
+    if (memberIds.isEmpty || sundaySessionIds.isEmpty) {
+      return <String, DateTime>{};
+    }
+
+    final data = await _client
+        .from(_table)
+        .select('member_id, clocked_at')
+        .inFilter('member_id', memberIds)
+        .inFilter('session_id', sundaySessionIds)
+        .inFilter('status', ['present', 'excused'])
+        .order('clocked_at', ascending: false);
+
+    final latest = <String, DateTime>{};
+    for (final row in data as List) {
+      final map = row as Map<String, dynamic>;
+      final memberId = map['member_id'] as String;
+      latest.putIfAbsent(
+        memberId,
+        () => DateTime.parse(map['clocked_at'] as String),
+      );
+    }
+    return latest;
+  }
+
   // ── Offline Support ───────────────────────────────────────────────────────────
 
   /// Clock in by offline code with offline fallback support.
@@ -405,7 +538,7 @@ class AttendanceService {
       try {
         final member = await _memberService.getMemberByOfflineCode(code);
         if (member == null) {
-          throw Exception('Member not found');
+          throw Exception('The code entered does not match any member. Please check and try again.');
         }
 
         final now = DateTime.now();
@@ -420,6 +553,7 @@ class AttendanceService {
         );
 
         // Return a pending clock-in record locally
+        _notifyClockIn(member.fullName, sessionId);
         return ClockIn(
           id: id,
           sessionId: sessionId,
@@ -440,6 +574,20 @@ class AttendanceService {
       code: code,
       status: status,
     );
+  }
+
+  /// Fire-and-forget: broadcasts a clock-in push notification to all staff.
+  void _notifyClockIn(String memberName, String sessionId) {
+    Future(() async {
+      try {
+        await _client.functions.invoke(
+          'notify-clock-in',
+          body: {'memberName': memberName, 'sessionId': sessionId},
+        );
+      } catch (e) {
+        AppLogger.warn(_tag, 'notify-clock-in push failed (non-critical): $e');
+      }
+    });
   }
 
   /// Check online status

@@ -29,7 +29,7 @@ class CelebrationsScreen extends ConsumerWidget {
       ),
       body: membersAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: $e')),
+        error: (e, _) => const Center(child: Text('Unable to load celebrations. Please try again.')),
         data: (members) {
           final today = nowInLagos();
           final todayMMDD = formatMMDD(today);

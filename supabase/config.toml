@@ -59,3 +59,15 @@ enable_confirmations = false
 
 [analytics]
 enabled = false
+
+[functions.generate-sessions]
+verify_jwt = false
+
+[functions.notify-birthdays]
+verify_jwt = false
+
+[functions.follow-up-reminders]
+verify_jwt = false
+
+[functions.evaluate-achievements]
+verify_jwt = false

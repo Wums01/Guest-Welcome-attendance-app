@@ -90,14 +90,14 @@ class ProgramService {
       if (!isTBD) {
         if (startDate == null || startDate.isEmpty) {
           throw Exception(
-              'Start date is required when the program is not marked as TBD.');
+              'Please enter a start date');
         }
         if (endDate == null || endDate.isEmpty) {
           throw Exception(
-              'End date is required when the program is not marked as TBD.');
+              'Please enter an end date');
         }
         if (endDate.compareTo(startDate) < 0) {
-          throw Exception('End date cannot be earlier than start date.');
+          throw Exception('The end date must be after the start date.');
         }
       }
 
@@ -148,10 +148,10 @@ class ProgramService {
       if (!nextIsTBD) {
         if (nextStart == null || nextEnd == null) {
           throw Exception(
-              'Start date and end date are required when program is not TBD.');
+              'Please enter both start and end dates.');
         }
         if (nextEnd.compareTo(nextStart) < 0) {
-          throw Exception('End date cannot be earlier than start date.');
+          throw Exception('The end date must be after the start date.');
         }
       }
 
