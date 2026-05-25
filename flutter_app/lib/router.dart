@@ -49,8 +49,8 @@ GoRouter _buildRouter(Ref ref, ChangeNotifier refreshListenable) {
       final loc = state.matchedLocation;
 
       // Only '/' (profile picker) is accessible without a session
-      if (staff == null && loc != '/') return '/';         // guard all other routes
-      if (staff != null && loc == '/') return '/home';     // skip picker if authed
+      if (staff == null && loc != '/') return '/'; // guard all other routes
+      if (staff != null && loc == '/') return '/home'; // skip picker if authed
       return null;
     },
     routes: [
@@ -157,6 +157,7 @@ GoRouter _buildRouter(Ref ref, ChangeNotifier refreshListenable) {
             member: member['member'],
             entryTime: member['entryTime'],
             status: member['status'],
+            positionLabel: member['positionLabel'],
           );
         },
       ),
@@ -183,11 +184,11 @@ class AppShell extends StatelessWidget {
   final Widget child;
 
   static const _tabs = [
-    (label: 'Home',     icon: Icons.home_outlined,    route: '/home'),
-    (label: 'Sessions', icon: Icons.calendar_today,   route: '/sessions'),
+    (label: 'Home', icon: Icons.home_outlined, route: '/home'),
+    (label: 'Sessions', icon: Icons.calendar_today, route: '/sessions'),
     (label: 'Programs', icon: Icons.list_alt_outlined, route: '/programs'),
-    (label: 'Members',  icon: Icons.people_outline,   route: '/members'),
-    (label: 'Reports',  icon: Icons.bar_chart,        route: '/reports'),
+    (label: 'Members', icon: Icons.people_outline, route: '/members'),
+    (label: 'Reports', icon: Icons.bar_chart, route: '/reports'),
   ];
 
   int _currentIndex(BuildContext context) {

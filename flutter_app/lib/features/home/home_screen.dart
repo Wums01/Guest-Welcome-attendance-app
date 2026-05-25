@@ -60,7 +60,9 @@ final _absentMembersProvider = FutureProvider<List<Member>>((ref) async {
   // Go back 14 days to cover 2 Sundays
   final since = now.subtract(const Duration(days: 14));
   final sinceDate = formatDateISO(since);
-  return ref.read(attendanceServiceProvider).getActiveAbsentMembersSince(sinceDate);
+  return ref
+      .read(attendanceServiceProvider)
+      .getActiveAbsentMembersSince(sinceDate);
 });
 
 // Top 3 members by present count this calendar month
@@ -69,8 +71,7 @@ typedef _LeaderEntry = ({Member member, int pts});
 final _topMembersProvider =
     FutureProvider.autoDispose<List<_LeaderEntry>>((ref) async {
   final now = nowInLagos();
-  final yearMonth =
-      '${now.year}-${now.month.toString().padLeft(2, '0')}';
+  final yearMonth = '${now.year}-${now.month.toString().padLeft(2, '0')}';
   final sessions =
       await ref.read(sessionServiceProvider).getSessionsByMonth(yearMonth);
   if (sessions.isEmpty) return [];
@@ -211,14 +212,18 @@ class HomeScreen extends ConsumerWidget {
                         style: TextStyle(
                           fontSize: 17,
                           fontWeight: FontWeight.w700,
-                          color: isDark ? AppTheme.darkOnSurface : const Color(0xFF0F172A),
+                          color: isDark
+                              ? AppTheme.darkOnSurface
+                              : const Color(0xFF0F172A),
                         ),
                       ),
                       Text(
                         staff?.role.displayName ?? 'Guest Team Lead',
                         style: TextStyle(
                           fontSize: 12,
-                          color: isDark ? AppTheme.darkOnSurfaceVariant : AppTheme.slate500,
+                          color: isDark
+                              ? AppTheme.darkOnSurfaceVariant
+                              : AppTheme.slate500,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -350,8 +355,10 @@ class HomeScreen extends ConsumerWidget {
               loading: () => const _StatsRow(registered: null, sessions: null),
               error: (_, __) => const _StatsRow(registered: 0, sessions: 0),
               data: (members) => sessionsAsync.when(
-                loading: () => _StatsRow(registered: members.length, sessions: null),
-                error: (_, __) => _StatsRow(registered: members.length, sessions: 0),
+                loading: () =>
+                    _StatsRow(registered: members.length, sessions: null),
+                error: (_, __) =>
+                    _StatsRow(registered: members.length, sessions: 0),
                 data: (sessions) => _StatsRow(
                   registered: members.length,
                   sessions: sessions.length,
@@ -375,7 +382,8 @@ class HomeScreen extends ConsumerWidget {
             loading: () => const SizedBox.shrink(),
             error: (_, __) => const SizedBox.shrink(),
             data: (members) {
-              final celebrations = _buildCelebrations(members, todayMMDD, lagosNow);
+              final celebrations =
+                  _buildCelebrations(members, todayMMDD, lagosNow);
               if (celebrations.isEmpty) return const SizedBox.shrink();
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -429,7 +437,11 @@ class HomeScreen extends ConsumerWidget {
                 members: members,
                 currentStaff: staff,
               ),
-              orElse: () => const SizedBox.shrink(),
+              loading: () => const _FollowUpStatusCard.loading(),
+              error: (error, _) => _FollowUpStatusCard.error(
+                message: error.toString(),
+              ),
+              orElse: () => const _FollowUpStatusCard.empty(),
             );
           }),
         ],
@@ -442,8 +454,8 @@ class HomeScreen extends ConsumerWidget {
     final result = <_CelebrationData>[];
     for (final m in members) {
       if (m.birthdayMD == todayMMDD) {
-        result.add(_CelebrationData(
-            member: m, isBirthday: true, label: 'Today'));
+        result
+            .add(_CelebrationData(member: m, isBirthday: true, label: 'Today'));
       } else if (m.birthdayMD.isNotEmpty && isWithinDays(m.birthdayMD, 7)) {
         result.add(_CelebrationData(
             member: m,
@@ -452,8 +464,8 @@ class HomeScreen extends ConsumerWidget {
       }
       if (m.anniversaryMD != null) {
         if (m.anniversaryMD == todayMMDD) {
-          result.add(_CelebrationData(
-              member: m, isBirthday: false, label: 'Today'));
+          result.add(
+              _CelebrationData(member: m, isBirthday: false, label: 'Today'));
         } else if (isWithinDays(m.anniversaryMD!, 7)) {
           result.add(_CelebrationData(
               member: m,
@@ -497,7 +509,7 @@ class _UpcomingSessionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return Container(
       decoration: BoxDecoration(
         color: isDark ? AppTheme.darkSurfaceContainer : AppTheme.surface,
@@ -507,9 +519,9 @@ class _UpcomingSessionCard extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: isDark 
-              ? Colors.black.withValues(alpha: 0.2)
-              : Colors.black.withValues(alpha: 0.04),
+            color: isDark
+                ? Colors.black.withValues(alpha: 0.2)
+                : Colors.black.withValues(alpha: 0.04),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -530,8 +542,8 @@ class _UpcomingSessionCard extends StatelessWidget {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: isDark
-                      ? const [Color(0xFF242E45), Color(0xFF141B2E)]
-                      : const [Color(0xFF1E3A5F), Color(0xFF0F49BD)],
+                        ? const [Color(0xFF242E45), Color(0xFF141B2E)]
+                        : const [Color(0xFF1E3A5F), Color(0xFF0F49BD)],
                   ),
                 ),
                 child: const Center(
@@ -552,8 +564,8 @@ class _UpcomingSessionCard extends StatelessWidget {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: isDark
-                      ? [Colors.transparent, Colors.black87]
-                      : [Colors.transparent, Colors.black54],
+                        ? [Colors.transparent, Colors.black87]
+                        : [Colors.transparent, Colors.black54],
                   ),
                 ),
               ),
@@ -725,7 +737,7 @@ class _CelebrationCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return Container(
       width: 140,
       padding: const EdgeInsets.all(14),
@@ -825,7 +837,11 @@ class _FollowUpSection extends ConsumerWidget {
               const Spacer(),
               Text(
                 'Absent 2+ Sundays',
-                style: TextStyle(fontSize: 11, color: isDark ? AppTheme.darkOnSurfaceVariant : AppTheme.slate500),
+                style: TextStyle(
+                    fontSize: 11,
+                    color: isDark
+                        ? AppTheme.darkOnSurfaceVariant
+                        : AppTheme.slate500),
               ),
             ],
           ),
@@ -839,13 +855,15 @@ class _FollowUpSection extends ConsumerWidget {
           itemBuilder: (ctx, i) {
             final m = members[i];
             return Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
-                color: isDark ? AppTheme.errorBg.withValues(alpha: 0.25) : AppTheme.errorBg,
+                color: isDark
+                    ? AppTheme.errorBg.withValues(alpha: 0.25)
+                    : AppTheme.errorBg,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                    color: AppTheme.error.withValues(alpha: isDark ? 0.2 : 0.3)),
+                    color:
+                        AppTheme.error.withValues(alpha: isDark ? 0.2 : 0.3)),
               ),
               child: Row(
                 children: [
@@ -859,7 +877,9 @@ class _FollowUpSection extends ConsumerWidget {
                             style: TextStyle(
                                 fontWeight: FontWeight.w700,
                                 fontSize: 13,
-                                color: isDark ? AppTheme.darkOnSurface : Colors.black)),
+                                color: isDark
+                                    ? AppTheme.darkOnSurface
+                                    : Colors.black)),
                         const SizedBox(height: 2),
                         TeamBadge(team: m.team),
                       ],
@@ -1059,6 +1079,94 @@ class _FollowUpSection extends ConsumerWidget {
   }
 }
 
+class _FollowUpStatusCard extends StatelessWidget {
+  const _FollowUpStatusCard._({
+    required this.icon,
+    required this.title,
+    required this.message,
+    required this.color,
+  });
+
+  const _FollowUpStatusCard.loading()
+      : this._(
+          icon: Icons.hourglass_empty,
+          title: 'Checking follow-ups',
+          message: 'Looking for members who need attention.',
+          color: AppTheme.primary,
+        );
+
+  const _FollowUpStatusCard.empty()
+      : this._(
+          icon: Icons.check_circle_outline,
+          title: 'No active follow-ups',
+          message:
+              'Everyone is accounted for or still inside the follow-up window.',
+          color: AppTheme.success,
+        );
+
+  const _FollowUpStatusCard.error({required String message})
+      : this._(
+          icon: Icons.error_outline,
+          title: 'Follow-ups need attention',
+          message: message,
+          color: AppTheme.error,
+        );
+
+  final IconData icon;
+  final String title;
+  final String message;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 24, 16, 0),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: isDark ? AppTheme.darkSurfaceContainer : AppTheme.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withValues(alpha: 0.28)),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: color, size: 20),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 13,
+                      color: isDark
+                          ? AppTheme.darkOnSurface
+                          : const Color(0xFF0F172A),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    message,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: isDark
+                          ? AppTheme.darkOnSurfaceVariant
+                          : AppTheme.slate500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 // ── _TopMembersSection ───────────────────────────────────────────────────────
 
 class _TopMembersSection extends StatelessWidget {
@@ -1068,7 +1176,7 @@ class _TopMembersSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1082,7 +1190,8 @@ class _TopMembersSection extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.w700,
-                  color: isDark ? AppTheme.darkOnSurface : const Color(0xFF0F172A),
+                  color:
+                      isDark ? AppTheme.darkOnSurface : const Color(0xFF0F172A),
                 ),
               ),
               TextButton(
@@ -1103,10 +1212,12 @@ class _TopMembersSection extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: isDark ? AppTheme.darkSurfaceContainer : AppTheme.surface,
+                color:
+                    isDark ? AppTheme.darkSurfaceContainer : AppTheme.surface,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: isDark ? AppTheme.darkOutlineVariant : AppTheme.slate200,
+                  color:
+                      isDark ? AppTheme.darkOutlineVariant : AppTheme.slate200,
                 ),
               ),
               child: const Center(
@@ -1118,84 +1229,88 @@ class _TopMembersSection extends StatelessWidget {
             ),
           )
         else
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Column(
-            children: leaders.asMap().entries.map((entry) {
-              final rank = entry.key + 1;
-              final e = entry.value;
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: isDark ? AppTheme.darkSurfaceContainer : AppTheme.surface,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: isDark ? AppTheme.darkOutlineVariant : AppTheme.slate200,
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Column(
+              children: leaders.asMap().entries.map((entry) {
+                final rank = entry.key + 1;
+                final e = entry.value;
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? AppTheme.darkSurfaceContainer
+                          : AppTheme.surface,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: isDark
+                            ? AppTheme.darkOutlineVariant
+                            : AppTheme.slate200,
+                      ),
                     ),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 28,
-                        height: 28,
-                        decoration: BoxDecoration(
-                          color: rank == 1
-                              ? (isDark
-                                  ? const Color(0xFF4A3C2A)
-                                  : const Color(0xFFFFF7ED))
-                              : (isDark
-                                  ? const Color(0xFF0A1128)
-                                  : AppTheme.primaryBg),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Center(
-                          child: Text(
-                            '#$rank',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w800,
-                              color: rank == 1
-                                  ? (isDark
-                                      ? const Color(0xFFD4A574)
-                                      : const Color(0xFFEA580C))
-                                  : (isDark
-                                      ? AppTheme.darkPrimary
-                                      : AppTheme.primary),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 28,
+                          height: 28,
+                          decoration: BoxDecoration(
+                            color: rank == 1
+                                ? (isDark
+                                    ? const Color(0xFF4A3C2A)
+                                    : const Color(0xFFFFF7ED))
+                                : (isDark
+                                    ? const Color(0xFF0A1128)
+                                    : AppTheme.primaryBg),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Center(
+                            child: Text(
+                              '#$rank',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w800,
+                                color: rank == 1
+                                    ? (isDark
+                                        ? const Color(0xFFD4A574)
+                                        : const Color(0xFFEA580C))
+                                    : (isDark
+                                        ? AppTheme.darkPrimary
+                                        : AppTheme.primary),
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      MemberAvatar(fullName: e.member.fullName, radius: 16),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          e.member.fullName,
+                        const SizedBox(width: 12),
+                        MemberAvatar(fullName: e.member.fullName, radius: 16),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            e.member.fullName,
+                            style: const TextStyle(
+                                fontWeight: FontWeight.w600, fontSize: 14),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        TeamBadge(team: e.member.team),
+                        const SizedBox(width: 8),
+                        Text(
+                          '${e.pts} pts',
                           style: const TextStyle(
-                              fontWeight: FontWeight.w600, fontSize: 14),
-                          overflow: TextOverflow.ellipsis,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13,
+                            color: AppTheme.primary,
+                          ),
                         ),
-                      ),
-                      TeamBadge(team: e.member.team),
-                      const SizedBox(width: 8),
-                      Text(
-                        '${e.pts} pts',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 13,
-                          color: AppTheme.primary,
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              );
-            }).toList(),
+                );
+              }).toList(),
+            ),
           ),
-        ),
         const SizedBox(height: 16),
       ],
     );
@@ -1222,7 +1337,7 @@ Future<_FollowUpResult?> _showFollowUpDialog(
   Member member,
 ) async {
   String selectedAction = 'contacted';
-  DateTime? scheduledDate;
+  DateTime? scheduledDate = DateTime.now().add(const Duration(days: 14));
   final noteCtrl = TextEditingController();
   final outcomeCtrl = TextEditingController();
 
@@ -1255,7 +1370,16 @@ Future<_FollowUpResult?> _showFollowUpDialog(
                           child: Text(a.$2),
                         ))
                     .toList(),
-                onChanged: (v) => setState(() => selectedAction = v!),
+                onChanged: (v) => setState(() {
+                  selectedAction = v!;
+                  if (selectedAction == 'returned' ||
+                      selectedAction == 'transferred_out') {
+                    scheduledDate = null;
+                  } else {
+                    scheduledDate ??=
+                        DateTime.now().add(const Duration(days: 14));
+                  }
+                }),
               ),
               const SizedBox(height: 12),
               TextField(
@@ -1276,33 +1400,35 @@ Future<_FollowUpResult?> _showFollowUpDialog(
                 maxLines: 2,
               ),
               const SizedBox(height: 12),
-              Row(
-                children: [
-                  const Text('Schedule next follow-up:',
-                      style: TextStyle(fontSize: 13)),
-                  const Spacer(),
-                  TextButton(
-                    onPressed: () async {
-                      final picked = await showDatePicker(
-                        context: ctx,
-                        initialDate:
-                            DateTime.now().add(const Duration(days: 7)),
-                        firstDate: DateTime.now(),
-                        lastDate: DateTime.now()
-                            .add(const Duration(days: 365)),
-                      );
-                      if (picked != null) {
-                        setState(() => scheduledDate = picked);
-                      }
-                    },
-                    child: Text(
-                      scheduledDate == null
-                          ? 'Pick date'
-                          : '${scheduledDate!.day}/${scheduledDate!.month}/${scheduledDate!.year}',
+              if (selectedAction != 'returned' &&
+                  selectedAction != 'transferred_out')
+                Row(
+                  children: [
+                    const Text('Next follow-up:',
+                        style: TextStyle(fontSize: 13)),
+                    const Spacer(),
+                    TextButton(
+                      onPressed: () async {
+                        final picked = await showDatePicker(
+                          context: ctx,
+                          initialDate: scheduledDate ??
+                              DateTime.now().add(const Duration(days: 14)),
+                          firstDate: DateTime.now(),
+                          lastDate:
+                              DateTime.now().add(const Duration(days: 365)),
+                        );
+                        if (picked != null) {
+                          setState(() => scheduledDate = picked);
+                        }
+                      },
+                      child: Text(
+                        scheduledDate == null
+                            ? 'Pick date'
+                            : '${scheduledDate!.day}/${scheduledDate!.month}/${scheduledDate!.year}',
+                      ),
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                ),
             ],
           ),
         ),
@@ -1314,9 +1440,7 @@ Future<_FollowUpResult?> _showFollowUpDialog(
           FilledButton(
             onPressed: () => Navigator.of(ctx).pop(_FollowUpResult(
               actionType: selectedAction,
-              note: noteCtrl.text.trim().isEmpty
-                  ? null
-                  : noteCtrl.text.trim(),
+              note: noteCtrl.text.trim().isEmpty ? null : noteCtrl.text.trim(),
               scheduledFollowUpAt: scheduledDate,
               outcomeNote: outcomeCtrl.text.trim().isEmpty
                   ? null

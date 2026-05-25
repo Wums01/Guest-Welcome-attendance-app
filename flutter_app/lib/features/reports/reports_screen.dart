@@ -17,6 +17,7 @@ import 'package:share_plus/share_plus.dart';
 import '../../models/attendance_export_entry.dart';
 import '../../models/attendance_summary.dart';
 import '../../models/enums.dart';
+import '../../models/follow_up_report_entry.dart';
 import '../../models/leaderboard_entry.dart';
 import '../../services/report_service.dart';
 import '../../core/utils/date_utils.dart';
@@ -28,13 +29,12 @@ import '../../widgets/avatar_widget.dart';
 // Helpers
 // ---------------------------------------------------------------------------
 
-String _ym(DateTime d) =>
-    '${d.year}-${d.month.toString().padLeft(2, '0')}';
+String _ym(DateTime d) => '${d.year}-${d.month.toString().padLeft(2, '0')}';
 
 String _monthLabel(String yearMonth) {
   final parts = yearMonth.split('-');
-  return DateFormat('MMM').format(
-      DateTime(int.parse(parts[0]), int.parse(parts[1])));
+  return DateFormat('MMM')
+      .format(DateTime(int.parse(parts[0]), int.parse(parts[1])));
 }
 
 List<String> _last6YMs(String pivotYM) {
@@ -47,6 +47,14 @@ List<String> _last6YMs(String pivotYM) {
 }
 
 const _kDayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+String _followUpActionLabel(String value) {
+  return value
+      .split('_')
+      .map((part) =>
+          part.isEmpty ? part : '${part[0].toUpperCase()}${part.substring(1)}')
+      .join(' ');
+}
 
 // ---------------------------------------------------------------------------
 // Providers
@@ -89,8 +97,8 @@ final _chartDataProvider = FutureProvider.autoDispose
   (ref, pivotYM) async {
     final yms = _last6YMs(pivotYM);
     final results = await Future.wait(
-      yms.map((ym) =>
-          ref.read(reportServiceProvider).getMonthlyLeaderboard(ym)),
+      yms.map(
+          (ym) => ref.read(reportServiceProvider).getMonthlyLeaderboard(ym)),
     );
     return List.generate(yms.length, (i) {
       final total = results[i].fold(0, (s, e) => s + e.presentCount);
@@ -100,18 +108,20 @@ final _chartDataProvider = FutureProvider.autoDispose
 );
 
 // Yearly 12-month chart — always current year
-final _yearlyChartProvider = FutureProvider.autoDispose<
-    List<({String month, int total})>>((ref) async {
+final _yearlyChartProvider =
+    FutureProvider.autoDispose<List<({String month, int total})>>((ref) async {
   final year = nowInLagos().year;
-  final yms = List.generate(
-      12, (i) => '$year-${(i + 1).toString().padLeft(2, '0')}');
+  final yms =
+      List.generate(12, (i) => '$year-${(i + 1).toString().padLeft(2, '0')}');
   final results = await Future.wait(
-    yms.map((ym) =>
-        ref.read(reportServiceProvider).getMonthlyLeaderboard(ym)),
+    yms.map((ym) => ref.read(reportServiceProvider).getMonthlyLeaderboard(ym)),
   );
   return List.generate(12, (i) {
     final total = results[i].fold(0, (s, e) => s + e.presentCount);
-    return (month: DateFormat('MMM').format(DateTime(year, i + 1)), total: total);
+    return (
+      month: DateFormat('MMM').format(DateTime(year, i + 1)),
+      total: total
+    );
   });
 });
 
@@ -121,6 +131,13 @@ final _yearlyLeaderboardProvider =
   final year = '${nowInLagos().year}';
   return ref.read(reportServiceProvider).getYearlyLeaderboard(year);
 });
+
+final _followUpReportProvider = FutureProvider.autoDispose
+    .family<List<FollowUpReportEntry>, ({String startDate, String endDate})>(
+  (ref, range) => ref
+      .read(reportServiceProvider)
+      .getFollowUpReportRowsByDateRange(range.startDate, range.endDate),
+);
 
 // ---------------------------------------------------------------------------
 // ReportsScreen
@@ -173,6 +190,25 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
   DateTime get _weekEnd => _selectedWeekStart.add(const Duration(days: 6));
   String get _year => '${nowInLagos().year}';
 
+  ({String startDate, String endDate}) get _dailyRange =>
+      (startDate: _dateStr, endDate: _dateStr);
+
+  ({String startDate, String endDate}) get _weeklyRange =>
+      (startDate: _weekStr, endDate: formatDateISO(_weekEnd));
+
+  ({String startDate, String endDate}) get _monthlyRange {
+    final parts = _selectedYearMonth.split('-');
+    final monthStart = DateTime(int.parse(parts[0]), int.parse(parts[1]), 1);
+    final monthEnd = DateTime(monthStart.year, monthStart.month + 1, 0);
+    return (
+      startDate: '$_selectedYearMonth-01',
+      endDate: formatDateISO(monthEnd)
+    );
+  }
+
+  ({String startDate, String endDate}) get _yearlyRange =>
+      (startDate: '$_year-01-01', endDate: '$_year-12-31');
+
   List<LeaderboardEntry> _teamFiltered(List<LeaderboardEntry> entries) {
     if (_teamFilter == 'all') return entries;
     final team = Team.values.firstWhere(
@@ -188,15 +224,19 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
     switch (_tabController.index) {
       case 0:
         ref.invalidate(_dailyReportProvider(_dateStr));
+        ref.invalidate(_followUpReportProvider(_dailyRange));
       case 1:
         ref.invalidate(_weeklyReportProvider(_weekStr));
+        ref.invalidate(_followUpReportProvider(_weeklyRange));
       case 2:
         ref.invalidate(_monthlyLeaderboardProvider(_selectedYearMonth));
         ref.invalidate(_monthlyGuestTotalProvider(_selectedYearMonth));
         ref.invalidate(_chartDataProvider(_selectedYearMonth));
+        ref.invalidate(_followUpReportProvider(_monthlyRange));
       case 3:
         ref.invalidate(_yearlyChartProvider);
         ref.invalidate(_yearlyLeaderboardProvider);
+        ref.invalidate(_followUpReportProvider(_yearlyRange));
     }
   }
 
@@ -228,12 +268,16 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
 
   Future<void> _exportDaily() async {
     final summaries = await ref.read(_dailyReportProvider(_dateStr).future);
-    final rows = await ref.read(reportServiceProvider).getAttendanceExportRows(_dateStr);
+    final rows =
+        await ref.read(reportServiceProvider).getAttendanceExportRows(_dateStr);
+    final followUps =
+        await ref.read(_followUpReportProvider(_dailyRange).future);
     final bytes = _buildAttendanceWorkbook(
       title: 'Daily Attendance Sheet',
       subtitle: _dateStr,
       summaries: summaries,
       rows: rows,
+      followUps: followUps,
     );
     await _shareBinaryFile(
       bytes,
@@ -248,6 +292,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
     final rows = await ref
         .read(reportServiceProvider)
         .getAttendanceExportRowsByDateRange(_weekStr, formatDateISO(_weekEnd));
+    final followUps =
+        await ref.read(_followUpReportProvider(_weeklyRange).future);
     final label =
         '${formatDateISO(_selectedWeekStart)}_to_${formatDateISO(_weekEnd)}';
     final bytes = _buildAttendanceWorkbook(
@@ -255,6 +301,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
       subtitle: label,
       summaries: summaries,
       rows: rows,
+      followUps: followUps,
     );
     await _shareBinaryFile(
       bytes,
@@ -265,23 +312,22 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
   }
 
   Future<void> _exportMonthly() async {
-    final startDate = '$_selectedYearMonth-01';
-    final parts = _selectedYearMonth.split('-');
-    final monthStart = DateTime(int.parse(parts[0]), int.parse(parts[1]), 1);
-    final monthEnd = DateTime(monthStart.year, monthStart.month + 1, 0);
-    final endDate = formatDateISO(monthEnd);
+    final range = _monthlyRange;
 
     final summaries = await ref
         .read(reportServiceProvider)
-        .getSessionsByDateRange(startDate, endDate);
+        .getSessionsByDateRange(range.startDate, range.endDate);
     final rows = await ref
         .read(reportServiceProvider)
-        .getAttendanceExportRowsByDateRange(startDate, endDate);
+        .getAttendanceExportRowsByDateRange(range.startDate, range.endDate);
+    final followUps =
+        await ref.read(_followUpReportProvider(_monthlyRange).future);
     final bytes = _buildAttendanceWorkbook(
       title: 'Monthly Attendance Sheet',
       subtitle: _selectedYearMonth,
       summaries: summaries,
       rows: rows,
+      followUps: followUps,
     );
     await _shareBinaryFile(
       bytes,
@@ -292,19 +338,21 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
   }
 
   Future<void> _exportYearly() async {
-    final startDate = '$_year-01-01';
-    final endDate = '$_year-12-31';
+    final range = _yearlyRange;
     final summaries = await ref
         .read(reportServiceProvider)
-        .getSessionsByDateRange(startDate, endDate);
+        .getSessionsByDateRange(range.startDate, range.endDate);
     final rows = await ref
         .read(reportServiceProvider)
-        .getAttendanceExportRowsByDateRange(startDate, endDate);
+        .getAttendanceExportRowsByDateRange(range.startDate, range.endDate);
+    final followUps =
+        await ref.read(_followUpReportProvider(_yearlyRange).future);
     final bytes = _buildAttendanceWorkbook(
       title: 'Yearly Attendance Sheet',
       subtitle: _year,
       summaries: summaries,
       rows: rows,
+      followUps: followUps,
     );
     await _shareBinaryFile(
       bytes,
@@ -324,11 +372,11 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
       100,
       60,
     );
-    
+
     final dir = await getTemporaryDirectory();
     final file = File('${dir.path}/$filename');
     await file.writeAsBytes(bytes, flush: true);
-    
+
     await Share.shareXFiles(
       [XFile(file.path, mimeType: mimeType)],
       subject: subject,
@@ -341,6 +389,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
     required String subtitle,
     required List<AttendanceSummary> summaries,
     required List<AttendanceExportEntry> rows,
+    required List<FollowUpReportEntry> followUps,
   }) {
     final workbook = xls.Excel.createExcel();
     final defaultSheet = workbook.getDefaultSheet();
@@ -355,6 +404,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
 
     final summarySheet = workbook['Summary'];
     _writeSummarySheet(summarySheet, title, subtitle, summaries);
+    _writeFollowUpSheet(workbook['Follow Ups'], subtitle, followUps);
 
     for (final summary in summaries) {
       final safeName = _safeSheetName(
@@ -371,21 +421,92 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
     return workbook.save(fileName: 'attendance_export.xlsx') ?? <int>[];
   }
 
+  void _writeFollowUpSheet(
+    xls.Sheet sheet,
+    String subtitle,
+    List<FollowUpReportEntry> rows,
+  ) {
+    final scheduled = rows.where((row) => row.isScheduled).length;
+    final contacted = rows.where((row) => row.actionType == 'contacted').length;
+    final notReachable =
+        rows.where((row) => row.actionType == 'not_reachable').length;
+
+    sheet.merge(
+      xls.CellIndex.indexByString('A1'),
+      xls.CellIndex.indexByString('H1'),
+    );
+    _setCell(sheet, 'A1', 'Follow-up Report', style: _titleStyle());
+    _setCell(sheet, 'A2', 'Period');
+    _setCell(sheet, 'B2', subtitle, style: _pillStyle());
+    _setCell(sheet, 'A4', 'Total Follow-ups', style: _tableHeaderStyle());
+    _setCell(sheet, 'B4', rows.length.toString(), style: _statStyle());
+    _setCell(sheet, 'C4', 'Contacted', style: _tableHeaderStyle());
+    _setCell(sheet, 'D4', contacted.toString(), style: _statStyle());
+    _setCell(sheet, 'E4', 'Scheduled', style: _tableHeaderStyle());
+    _setCell(sheet, 'F4', scheduled.toString(), style: _statStyle());
+    _setCell(sheet, 'G4', 'Not Reachable', style: _tableHeaderStyle());
+    _setCell(sheet, 'H4', notReachable.toString(), style: _statStyle());
+
+    final headers = [
+      'Member',
+      'Action',
+      'Contacted By',
+      'Logged At',
+      'Scheduled For',
+      'Note',
+      'Outcome',
+    ];
+    for (int i = 0; i < headers.length; i++) {
+      _setCellByIndex(sheet, i, 6, headers[i], style: _tableHeaderStyle());
+    }
+
+    for (int i = 0; i < rows.length; i++) {
+      final rowIndex = 7 + i;
+      final row = rows[i];
+      _setCellByIndex(sheet, 0, rowIndex, row.memberName);
+      _setCellByIndex(sheet, 1, rowIndex, _followUpActionLabel(row.actionType));
+      _setCellByIndex(sheet, 2, rowIndex, row.createdByName);
+      _setCellByIndex(
+        sheet,
+        3,
+        rowIndex,
+        DateFormat('MMM d, y hh:mm a').format(row.createdAt.toLocal()),
+      );
+      _setCellByIndex(
+        sheet,
+        4,
+        rowIndex,
+        row.scheduledFollowUpAt == null
+            ? ''
+            : DateFormat('MMM d, y').format(row.scheduledFollowUpAt!.toLocal()),
+      );
+      _setCellByIndex(sheet, 5, rowIndex, row.note ?? '');
+      _setCellByIndex(sheet, 6, rowIndex, row.outcomeNote ?? '');
+    }
+  }
+
   void _writeSummarySheet(
     xls.Sheet sheet,
     String title,
     String subtitle,
     List<AttendanceSummary> summaries,
   ) {
-    final totalPresent = summaries.fold<int>(0, (sum, item) => sum + item.presentCount);
-    final totalAbsent = summaries.fold<int>(0, (sum, item) => sum + item.absentCount);
-    final totalExcused = summaries.fold<int>(0, (sum, item) => sum + item.excusedCount);
-    final totalGuests = summaries.fold<int>(0, (sum, item) => sum + item.newGuestCount);
-    final totalMarked = summaries.fold<int>(0, (sum, item) => sum + item.totalMarked);
+    final totalPresent =
+        summaries.fold<int>(0, (sum, item) => sum + item.presentCount);
+    final totalAbsent =
+        summaries.fold<int>(0, (sum, item) => sum + item.absentCount);
+    final totalExcused =
+        summaries.fold<int>(0, (sum, item) => sum + item.excusedCount);
+    final totalGuests =
+        summaries.fold<int>(0, (sum, item) => sum + item.newGuestCount);
+    final totalMarked =
+        summaries.fold<int>(0, (sum, item) => sum + item.totalMarked);
+    final totalPositioned =
+        summaries.fold<int>(0, (sum, item) => sum + item.positionedCount);
 
     sheet.merge(
       xls.CellIndex.indexByString('A1'),
-      xls.CellIndex.indexByString('G1'),
+      xls.CellIndex.indexByString('H1'),
     );
     _setCell(sheet, 'A1', title, style: _titleStyle());
     _setCell(sheet, 'A2', 'Period');
@@ -400,6 +521,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
     _setCell(sheet, 'B5', totalGuests.toString(), style: _statStyle());
     _setCell(sheet, 'C5', 'Total Marked', style: _tableHeaderStyle());
     _setCell(sheet, 'D5', totalMarked.toString(), style: _statStyle());
+    _setCell(sheet, 'E5', 'Positioned', style: _tableHeaderStyle());
+    _setCell(sheet, 'F5', totalPositioned.toString(), style: _statStyle());
 
     const headerRow = 7;
     final headers = [
@@ -410,9 +533,11 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
       'Excused',
       'Total',
       'Guests',
+      'Positioned',
     ];
     for (int i = 0; i < headers.length; i++) {
-      _setCellByIndex(sheet, i, headerRow, headers[i], style: _tableHeaderStyle());
+      _setCellByIndex(sheet, i, headerRow, headers[i],
+          style: _tableHeaderStyle());
     }
 
     for (int i = 0; i < summaries.length; i++) {
@@ -425,6 +550,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
       _setCellByIndex(sheet, 4, row, summary.excusedCount.toString());
       _setCellByIndex(sheet, 5, row, summary.totalMarked.toString());
       _setCellByIndex(sheet, 6, row, summary.newGuestCount.toString());
+      _setCellByIndex(sheet, 7, row, summary.positionedCount.toString());
     }
   }
 
@@ -435,7 +561,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
   }) {
     sheet.merge(
       xls.CellIndex.indexByString('A1'),
-      xls.CellIndex.indexByString('D1'),
+      xls.CellIndex.indexByString('E1'),
     );
     _setCell(sheet, 'A1', summary.sessionName, style: _titleStyle());
     _setCell(sheet, 'A2', 'Date');
@@ -452,13 +578,18 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
     _setCell(sheet, 'C5', 'Total', style: _tableHeaderStyle());
     _setCell(sheet, 'D5', summary.totalMarked.toString(), style: _statStyle());
 
-    final headers = ['Member name', 'Clocked in', 'Service', 'Status'];
+    final headers = [
+      'Member name',
+      'Clocked in',
+      'Service',
+      'Status',
+      'Position'
+    ];
     for (int i = 0; i < headers.length; i++) {
       _setCellByIndex(sheet, i, 7, headers[i], style: _tableHeaderStyle());
     }
 
-    final sortedRows = [...rows]
-      ..sort((a, b) {
+    final sortedRows = [...rows]..sort((a, b) {
         final byStatus = a.status.value.compareTo(b.status.value);
         if (byStatus != 0) return byStatus;
         return a.memberName.compareTo(b.memberName);
@@ -468,9 +599,11 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
       final rowIndex = 8 + i;
       final row = sortedRows[i];
       _setCellByIndex(sheet, 0, rowIndex, row.memberName);
-      _setCellByIndex(sheet, 1, rowIndex, DateFormat('hh:mm a').format(row.clockedAt));
+      _setCellByIndex(
+          sheet, 1, rowIndex, DateFormat('hh:mm a').format(row.clockedAt));
       _setCellByIndex(sheet, 2, rowIndex, row.sessionName);
       _setCellByIndex(sheet, 3, rowIndex, _capitalize(row.status.value));
+      _setCellByIndex(sheet, 4, rowIndex, row.positionLabel ?? '');
     }
   }
 
@@ -544,9 +677,13 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).brightness == Brightness.dark ? AppTheme.darkSurface : AppTheme.background,
+      backgroundColor: Theme.of(context).brightness == Brightness.dark
+          ? AppTheme.darkSurface
+          : AppTheme.background,
       appBar: AppBar(
-        backgroundColor: Theme.of(context).brightness == Brightness.dark ? AppTheme.darkSurfaceContainer : AppTheme.surface,
+        backgroundColor: Theme.of(context).brightness == Brightness.dark
+            ? AppTheme.darkSurfaceContainer
+            : AppTheme.surface,
         centerTitle: false,
         title: const Text('Reports'),
         actions: [
@@ -647,9 +784,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
               final totalNewGuests =
                   sessions.fold(0, (s, e) => s + e.newGuestCount);
               final totalM = sessions.fold(0, (s, e) => s + e.totalMarked);
-              final rateStr = totalM == 0
-                  ? '0%'
-                  : '${(totalP / totalM * 100).round()}%';
+              final rateStr =
+                  totalM == 0 ? '0%' : '${(totalP / totalM * 100).round()}%';
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -730,6 +866,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
             },
           );
         }),
+        _FollowUpReportSection(range: _dailyRange),
       ],
     );
   }
@@ -739,8 +876,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
   Widget _buildWeeklyTab() {
     final now = nowInLagos();
     final thisWeekStart = startOfWeek(DateTime(now.year, now.month, now.day));
-    final weekLabel =
-        '${DateFormat('MMM d').format(_selectedWeekStart)} – '
+    final weekLabel = '${DateFormat('MMM d').format(_selectedWeekStart)} – '
         '${DateFormat('MMM d, y').format(_weekEnd)}';
 
     return ListView(
@@ -748,12 +884,10 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
       children: [
         _PeriodNavBar(
           label: weekLabel,
-          onPrev: () => setState(() =>
-              _selectedWeekStart =
-                  _selectedWeekStart.subtract(const Duration(days: 7))),
-          onNext: () => setState(() =>
-              _selectedWeekStart =
-                  _selectedWeekStart.add(const Duration(days: 7))),
+          onPrev: () => setState(() => _selectedWeekStart =
+              _selectedWeekStart.subtract(const Duration(days: 7))),
+          onNext: () => setState(() => _selectedWeekStart =
+              _selectedWeekStart.add(const Duration(days: 7))),
           onReset: _selectedWeekStart == thisWeekStart
               ? null
               : () => setState(() => _selectedWeekStart = thisWeekStart),
@@ -835,6 +969,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
             },
           );
         }),
+        _FollowUpReportSection(range: _weeklyRange),
       ],
     );
   }
@@ -844,12 +979,12 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
   Widget _buildMonthlyTab() {
     final now = nowInLagos();
     final parts = _selectedYearMonth.split('-');
-    final ymDate =
-        DateTime(int.parse(parts[0]), int.parse(parts[1]));
+    final ymDate = DateTime(int.parse(parts[0]), int.parse(parts[1]));
     final leaderboardAsync = _allTime
         ? ref.watch(_yearlyLeaderboardProvider)
         : ref.watch(_monthlyLeaderboardProvider(_selectedYearMonth));
-    final guestTotalAsync = ref.watch(_monthlyGuestTotalProvider(_selectedYearMonth));
+    final guestTotalAsync =
+        ref.watch(_monthlyGuestTotalProvider(_selectedYearMonth));
     final chartAsync = ref.watch(_chartDataProvider(_selectedYearMonth));
 
     final bestScore = leaderboardAsync.maybeWhen(
@@ -929,7 +1064,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
               final n = entries.length;
               final avg = n == 0
                   ? 0.0
-                  : entries.map((e) => e.presentCount).fold(0, (a, b) => a + b) /
+                  : entries
+                          .map((e) => e.presentCount)
+                          .fold(0, (a, b) => a + b) /
                       n;
               return Padding(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
@@ -998,6 +1135,10 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
           ),
         ),
 
+        SliverToBoxAdapter(
+          child: _FollowUpReportSection(range: _monthlyRange),
+        ),
+
         // Leaderboard header
         SliverToBoxAdapter(
           child: Padding(
@@ -1006,8 +1147,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(children: [
-                  const Expanded(
-                      child: _SectionHeader(title: 'Leaderboard')),
+                  const Expanded(child: _SectionHeader(title: 'Leaderboard')),
                   GestureDetector(
                     onTap: () => setState(() => _allTime = !_allTime),
                     child: Container(
@@ -1017,8 +1157,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
                         color: AppTheme.primaryBg,
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                            color:
-                                AppTheme.primary.withValues(alpha: 0.3)),
+                            color: AppTheme.primary.withValues(alpha: 0.3)),
                       ),
                       child: Text(
                         _allTime ? 'All Time' : 'This Month',
@@ -1033,8 +1172,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
                 const SizedBox(height: 4),
                 Text(
                   '1 service = 1 point  \u00b7  Best: $bestScore pts',
-                  style: const TextStyle(
-                      fontSize: 12, color: AppTheme.slate500),
+                  style:
+                      const TextStyle(fontSize: 12, color: AppTheme.slate500),
                 ),
               ],
             ),
@@ -1047,8 +1186,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
               child: Padding(
                   padding: EdgeInsets.all(32),
                   child: Center(child: CircularProgressIndicator()))),
-          error: (e, _) =>
-              const SliverToBoxAdapter(child: Center(child: Text('Unable to load reports. Please try again.'))),
+          error: (e, _) => const SliverToBoxAdapter(
+              child: Center(
+                  child: Text('Unable to load reports. Please try again.'))),
           data: (all) {
             final entries = _teamFiltered(all);
             if (entries.isEmpty) {
@@ -1057,8 +1197,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
                       padding: EdgeInsets.all(32),
                       child: Center(
                           child: Text('No leaderboard data yet.',
-                              style:
-                                  TextStyle(color: AppTheme.slate500)))));
+                              style: TextStyle(color: AppTheme.slate500)))));
             }
             final maxP = entries
                 .map((e) => e.presentCount)
@@ -1069,9 +1208,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
                 delegate: SliverChildBuilderDelegate(
                   (ctx, i) {
                     final e = entries[i];
-                    final pct = maxP == 0
-                        ? 0
-                        : (e.presentCount / maxP * 100).round();
+                    final pct =
+                        maxP == 0 ? 0 : (e.presentCount / maxP * 100).round();
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 10),
                       child: _LeaderboardCard(
@@ -1111,7 +1249,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
                 style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
-                    color: isDark ? AppTheme.darkOnSurface : const Color(0xFF0F172A)),
+                    color: isDark
+                        ? AppTheme.darkOnSurface
+                        : const Color(0xFF0F172A)),
               );
             }),
           ),
@@ -1126,9 +1266,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
               final total = months.fold(0, (s, m) => s + m.total);
               final bestMonth = months.isEmpty
                   ? '—'
-                  : months
-                      .reduce((a, b) => b.total > a.total ? b : a)
-                      .month;
+                  : months.reduce((a, b) => b.total > a.total ? b : a).month;
               return Padding(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                 child: Row(children: [
@@ -1164,8 +1302,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
                 const SizedBox(height: 4),
                 Text(
                   'Total check-ins per month in $_year',
-                  style: const TextStyle(
-                      fontSize: 11, color: AppTheme.slate500),
+                  style:
+                      const TextStyle(fontSize: 11, color: AppTheme.slate500),
                 ),
                 const SizedBox(height: 12),
                 chartAsync.when(
@@ -1179,6 +1317,10 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
               ],
             ),
           ),
+        ),
+
+        SliverToBoxAdapter(
+          child: _FollowUpReportSection(range: _yearlyRange),
         ),
 
         // Yearly leaderboard header
@@ -1205,8 +1347,10 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
               child: Padding(
                   padding: EdgeInsets.all(32),
                   child: Center(child: CircularProgressIndicator()))),
-          error: (e, _) =>
-              const SliverToBoxAdapter(child: Center(child: Text('Unable to load leaderboard. Please try again.'))),
+          error: (e, _) => const SliverToBoxAdapter(
+              child: Center(
+                  child:
+                      Text('Unable to load leaderboard. Please try again.'))),
           data: (entries) {
             if (entries.isEmpty) {
               return const SliverToBoxAdapter(
@@ -1214,20 +1358,19 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
                       padding: EdgeInsets.all(32),
                       child: Center(
                           child: Text('No data for this year yet.',
-                              style:
-                                  TextStyle(color: AppTheme.slate500)))));
+                              style: TextStyle(color: AppTheme.slate500)))));
             }
-            final maxP =
-                entries.map((e) => e.presentCount).reduce((a, b) => a > b ? a : b);
+            final maxP = entries
+                .map((e) => e.presentCount)
+                .reduce((a, b) => a > b ? a : b);
             return SliverPadding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
               sliver: SliverList(
                 delegate: SliverChildBuilderDelegate(
                   (ctx, i) {
                     final e = entries[i];
-                    final pct = maxP == 0
-                        ? 0
-                        : (e.presentCount / maxP * 100).round();
+                    final pct =
+                        maxP == 0 ? 0 : (e.presentCount / maxP * 100).round();
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 10),
                       child: _LeaderboardCard(
@@ -1254,9 +1397,215 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
       decoration: BoxDecoration(
         color: isDark ? AppTheme.darkSurfaceContainer : AppTheme.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: isDark ? AppTheme.darkOutlineVariant : AppTheme.slate200),
+        border: Border.all(
+            color: isDark ? AppTheme.darkOutlineVariant : AppTheme.slate200),
       ),
       child: Center(child: child),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// _FollowUpReportSection
+// ---------------------------------------------------------------------------
+
+class _FollowUpReportSection extends ConsumerWidget {
+  const _FollowUpReportSection({required this.range});
+
+  final ({String startDate, String endDate}) range;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final asyncRows = ref.watch(_followUpReportProvider(range));
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
+      child: asyncRows.when(
+        loading: () => const _LoadingCard(),
+        error: (e, _) => _ErrorCard(error: 'Follow-up report: $e'),
+        data: (rows) {
+          final contacted =
+              rows.where((row) => row.actionType == 'contacted').length;
+          final scheduled = rows.where((row) => row.isScheduled).length;
+          final notReachable =
+              rows.where((row) => row.actionType == 'not_reachable').length;
+          final needsVisit =
+              rows.where((row) => row.actionType == 'needs_visit').length;
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const _SectionHeader(title: 'Follow-up Report'),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: _SummaryCard(
+                      label: 'FOLLOW-UPS',
+                      value: '${rows.length}',
+                      unit: 'logged',
+                      color: AppTheme.primary,
+                      bg: AppTheme.primaryBg,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _SummaryCard(
+                      label: 'CONTACTED',
+                      value: '$contacted',
+                      unit: 'members',
+                      color: AppTheme.success,
+                      bg: AppTheme.successBg,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    child: _SummaryCard(
+                      label: 'SCHEDULED',
+                      value: '$scheduled',
+                      unit: 'next steps',
+                      color: AppTheme.amber,
+                      bg: AppTheme.amberBg,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _SummaryCard(
+                      label: 'UNREACHED',
+                      value: '${notReachable + needsVisit}',
+                      unit: 'needs care',
+                      color: AppTheme.error,
+                      bg: AppTheme.errorBg,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              if (rows.isEmpty)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? AppTheme.darkSurfaceContainer
+                        : AppTheme.surface,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isDark
+                          ? AppTheme.darkOutlineVariant
+                          : AppTheme.slate200,
+                    ),
+                  ),
+                  child: const Text(
+                    'No follow-ups were logged in this period.',
+                    style: TextStyle(fontSize: 12, color: AppTheme.slate500),
+                  ),
+                )
+              else
+                ...rows.take(8).map(
+                      (row) => Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: _FollowUpReportCard(row: row),
+                      ),
+                    ),
+              if (rows.length > 8)
+                Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: Text(
+                    '${rows.length - 8} more follow-up${rows.length - 8 == 1 ? '' : 's'} included in export',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppTheme.slate500,
+                    ),
+                  ),
+                ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _FollowUpReportCard extends StatelessWidget {
+  const _FollowUpReportCard({required this.row});
+
+  final FollowUpReportEntry row;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final scheduled = row.scheduledFollowUpAt == null
+        ? 'No next date'
+        : DateFormat('MMM d, y').format(row.scheduledFollowUpAt!.toLocal());
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isDark ? AppTheme.darkSurfaceContainer : AppTheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isDark ? AppTheme.darkOutlineVariant : AppTheme.slate200,
+        ),
+      ),
+      child: Row(
+        children: [
+          MemberAvatar(fullName: row.memberName, radius: 18),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  row.memberName,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                    color: isDark
+                        ? AppTheme.darkOnSurface
+                        : const Color(0xFF0F172A),
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '${_followUpActionLabel(row.actionType)} · ${row.createdByName}',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: AppTheme.slate500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                DateFormat('MMM d').format(row.createdAt.toLocal()),
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.primary,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                scheduled,
+                style: TextStyle(
+                  fontSize: 10,
+                  color: row.isScheduled ? AppTheme.amber : AppTheme.slate500,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
@@ -1274,8 +1623,7 @@ class _GroupedDailyBarChart extends StatelessWidget {
     final maxY = sessions.isEmpty
         ? 10.0
         : sessions
-            .map((s) => max(max(s.presentCount, s.absentCount),
-                    s.excusedCount)
+            .map((s) => max(max(s.presentCount, s.absentCount), s.excusedCount)
                 .toDouble())
             .reduce((a, b) => a > b ? a : b);
     final ceiling = maxY == 0 ? 10.0 : (maxY * 1.3).ceilToDouble();
@@ -1298,8 +1646,11 @@ class _GroupedDailyBarChart extends StatelessWidget {
                 enabled: true,
                 touchTooltipData: BarTouchTooltipData(
                   getTooltipColor: (_) {
-                    final isDark = Theme.of(context).brightness == Brightness.dark;
-                    return isDark ? const Color(0xFF2D1B4A) : const Color(0xFF1E3A5F);
+                    final isDark =
+                        Theme.of(context).brightness == Brightness.dark;
+                    return isDark
+                        ? const Color(0xFF2D1B4A)
+                        : const Color(0xFF1E3A5F);
                   },
                   tooltipRoundedRadius: 8,
                   getTooltipItem: (group, gi, rod, ri) {
@@ -1343,9 +1694,7 @@ class _GroupedDailyBarChart extends StatelessWidget {
                   sideTitles: SideTitles(
                     showTitles: true,
                     reservedSize: 28,
-                    interval: ceiling == 0
-                        ? 5
-                        : (ceiling / 4).ceilToDouble(),
+                    interval: ceiling == 0 ? 5 : (ceiling / 4).ceilToDouble(),
                     getTitlesWidget: (value, meta) => Text(
                       value.toInt().toString(),
                       style: const TextStyle(
@@ -1353,10 +1702,10 @@ class _GroupedDailyBarChart extends StatelessWidget {
                     ),
                   ),
                 ),
-                topTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false)),
-                rightTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false)),
+                topTitles:
+                    const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                rightTitles:
+                    const AxisTitles(sideTitles: SideTitles(showTitles: false)),
               ),
               gridData: FlGridData(
                 show: true,
@@ -1433,7 +1782,8 @@ class _WeeklyDayChart extends StatelessWidget {
       decoration: BoxDecoration(
         color: isDark ? AppTheme.darkSurfaceContainer : AppTheme.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: isDark ? AppTheme.darkOutlineVariant : AppTheme.slate200),
+        border: Border.all(
+            color: isDark ? AppTheme.darkOutlineVariant : AppTheme.slate200),
       ),
       child: BarChart(
         BarChartData(
@@ -1444,7 +1794,9 @@ class _WeeklyDayChart extends StatelessWidget {
             touchTooltipData: BarTouchTooltipData(
               getTooltipColor: (_) {
                 final isDark = Theme.of(context).brightness == Brightness.dark;
-                return isDark ? const Color(0xFF2D1B4A) : const Color(0xFF1E3A5F);
+                return isDark
+                    ? const Color(0xFF2D1B4A)
+                    : const Color(0xFF1E3A5F);
               },
               tooltipRoundedRadius: 8,
               getTooltipItem: (group, gi, rod, ri) => BarTooltipItem(
@@ -1479,12 +1831,11 @@ class _WeeklyDayChart extends StatelessWidget {
               sideTitles: SideTitles(
                 showTitles: true,
                 reservedSize: 28,
-                interval:
-                    ceiling == 0 ? 5 : (ceiling / 4).ceilToDouble(),
+                interval: ceiling == 0 ? 5 : (ceiling / 4).ceilToDouble(),
                 getTitlesWidget: (value, meta) => Text(
                   value.toInt().toString(),
-                  style: const TextStyle(
-                      fontSize: 10, color: AppTheme.slate500),
+                  style:
+                      const TextStyle(fontSize: 10, color: AppTheme.slate500),
                 ),
               ),
             ),
@@ -1540,9 +1891,7 @@ class _MonthlyTrendChart extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final maxY = months.isEmpty
         ? 10.0
-        : months
-            .map((m) => m.total.toDouble())
-            .reduce((a, b) => a > b ? a : b);
+        : months.map((m) => m.total.toDouble()).reduce((a, b) => a > b ? a : b);
     final ceiling = maxY == 0 ? 10.0 : (maxY * 1.3).ceilToDouble();
 
     return Container(
@@ -1551,7 +1900,8 @@ class _MonthlyTrendChart extends StatelessWidget {
       decoration: BoxDecoration(
         color: isDark ? AppTheme.darkSurfaceContainer : AppTheme.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: isDark ? AppTheme.darkOutlineVariant : AppTheme.slate200),
+        border: Border.all(
+            color: isDark ? AppTheme.darkOutlineVariant : AppTheme.slate200),
       ),
       child: BarChart(
         BarChartData(
@@ -1562,7 +1912,9 @@ class _MonthlyTrendChart extends StatelessWidget {
             touchTooltipData: BarTouchTooltipData(
               getTooltipColor: (_) {
                 final isDark = Theme.of(context).brightness == Brightness.dark;
-                return isDark ? const Color(0xFF2D1B4A) : const Color(0xFF1E3A5F);
+                return isDark
+                    ? const Color(0xFF2D1B4A)
+                    : const Color(0xFF1E3A5F);
               },
               tooltipRoundedRadius: 8,
               getTooltipItem: (group, gi, rod, ri) => BarTooltipItem(
@@ -1597,12 +1949,11 @@ class _MonthlyTrendChart extends StatelessWidget {
               sideTitles: SideTitles(
                 showTitles: true,
                 reservedSize: 32,
-                interval:
-                    ceiling == 0 ? 5 : (ceiling / 4).ceilToDouble(),
+                interval: ceiling == 0 ? 5 : (ceiling / 4).ceilToDouble(),
                 getTitlesWidget: (value, meta) => Text(
                   value.toInt().toString(),
-                  style: const TextStyle(
-                      fontSize: 10, color: AppTheme.slate500),
+                  style:
+                      const TextStyle(fontSize: 10, color: AppTheme.slate500),
                 ),
               ),
             ),
@@ -1659,9 +2010,7 @@ class _YearlyBarChart extends StatelessWidget {
     final now = nowInLagos();
     final maxY = months.isEmpty
         ? 10.0
-        : months
-            .map((m) => m.total.toDouble())
-            .reduce((a, b) => a > b ? a : b);
+        : months.map((m) => m.total.toDouble()).reduce((a, b) => a > b ? a : b);
     final ceiling = maxY == 0 ? 10.0 : (maxY * 1.3).ceilToDouble();
 
     return Container(
@@ -1670,7 +2019,8 @@ class _YearlyBarChart extends StatelessWidget {
       decoration: BoxDecoration(
         color: isDark ? AppTheme.darkSurfaceContainer : AppTheme.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: isDark ? AppTheme.darkOutlineVariant : AppTheme.slate200),
+        border: Border.all(
+            color: isDark ? AppTheme.darkOutlineVariant : AppTheme.slate200),
       ),
       child: BarChart(
         BarChartData(
@@ -1680,7 +2030,9 @@ class _YearlyBarChart extends StatelessWidget {
             enabled: true,
             touchTooltipData: BarTouchTooltipData(
               getTooltipColor: (_) {
-                return isDark ? const Color(0xFF2D1B4A) : const Color(0xFF1E3A5F);
+                return isDark
+                    ? const Color(0xFF2D1B4A)
+                    : const Color(0xFF1E3A5F);
               },
               tooltipRoundedRadius: 8,
               getTooltipItem: (group, gi, rod, ri) => BarTooltipItem(
@@ -1715,12 +2067,11 @@ class _YearlyBarChart extends StatelessWidget {
               sideTitles: SideTitles(
                 showTitles: true,
                 reservedSize: 28,
-                interval:
-                    ceiling == 0 ? 5 : (ceiling / 4).ceilToDouble(),
+                interval: ceiling == 0 ? 5 : (ceiling / 4).ceilToDouble(),
                 getTitlesWidget: (value, meta) => Text(
                   value.toInt().toString(),
-                  style: const TextStyle(
-                      fontSize: 10, color: AppTheme.slate500),
+                  style:
+                      const TextStyle(fontSize: 10, color: AppTheme.slate500),
                 ),
               ),
             ),
@@ -1842,8 +2193,7 @@ class _PeriodNavBar extends StatelessWidget {
             onPressed: onPrev,
             color: AppTheme.primary,
             padding: EdgeInsets.zero,
-            constraints:
-                const BoxConstraints(minWidth: 36, minHeight: 36),
+            constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
           ),
           Expanded(
             child: Builder(builder: (ctx) {
@@ -1854,7 +2204,9 @@ class _PeriodNavBar extends StatelessWidget {
                 style: TextStyle(
                     fontWeight: FontWeight.w700,
                     fontSize: 14,
-                    color: isDark ? AppTheme.darkOnSurface : const Color(0xFF0F172A)),
+                    color: isDark
+                        ? AppTheme.darkOnSurface
+                        : const Color(0xFF0F172A)),
               );
             }),
           ),
@@ -1862,8 +2214,7 @@ class _PeriodNavBar extends StatelessWidget {
             GestureDetector(
               onTap: onReset,
               child: Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 8, vertical: 3),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: AppTheme.primaryBg,
                   borderRadius: BorderRadius.circular(12),
@@ -1885,8 +2236,7 @@ class _PeriodNavBar extends StatelessWidget {
             onPressed: onNext,
             color: AppTheme.primary,
             padding: EdgeInsets.zero,
-            constraints:
-                const BoxConstraints(minWidth: 36, minHeight: 36),
+            constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
           ),
         ],
       ),
@@ -1915,7 +2265,8 @@ class _SessionCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: isDark ? AppTheme.darkSurfaceContainer : AppTheme.surface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: isDark ? AppTheme.darkOutlineVariant : AppTheme.slate200),
+        border: Border.all(
+            color: isDark ? AppTheme.darkOutlineVariant : AppTheme.slate200),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
@@ -1938,7 +2289,9 @@ class _SessionCard extends StatelessWidget {
                       style: TextStyle(
                           fontWeight: FontWeight.w700,
                           fontSize: 14,
-                          color: isDark ? AppTheme.darkOnSurface : const Color(0xFF0F172A)),
+                          color: isDark
+                              ? AppTheme.darkOnSurface
+                              : const Color(0xFF0F172A)),
                     ),
                     Text(
                       summary.programTitle,
@@ -1956,8 +2309,8 @@ class _SessionCard extends StatelessWidget {
               ),
               // Attendance rate pill
               Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 10, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
                   color: rate >= 70
                       ? AppTheme.successBg
@@ -2008,12 +2361,17 @@ class _SessionCard extends StatelessWidget {
                   value: summary.excusedCount,
                   color: AppTheme.amber,
                   bg: AppTheme.amberBg),
+              _MiniStat(
+                  label: 'Positioned',
+                  value: summary.positionedCount,
+                  color: AppTheme.success,
+                  bg: AppTheme.successBg),
               Padding(
                 padding: const EdgeInsets.only(top: 4),
                 child: Text(
                   'Total: ${summary.totalMarked}',
-                  style: const TextStyle(
-                      fontSize: 12, color: AppTheme.slate500),
+                  style:
+                      const TextStyle(fontSize: 12, color: AppTheme.slate500),
                 ),
               ),
             ],
@@ -2056,14 +2414,11 @@ class _MiniStat extends StatelessWidget {
             TextSpan(
               text: '$value ',
               style: TextStyle(
-                  fontWeight: FontWeight.w800,
-                  fontSize: 13,
-                  color: color),
+                  fontWeight: FontWeight.w800, fontSize: 13, color: color),
             ),
             TextSpan(
               text: label,
-              style: const TextStyle(
-                  fontSize: 10, color: AppTheme.slate500),
+              style: const TextStyle(fontSize: 10, color: AppTheme.slate500),
             ),
           ],
         ),
@@ -2090,12 +2445,17 @@ class _EmptyState extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(Icons.bar_chart_outlined,
-                size: 48, color: isDark ? AppTheme.darkOutlineVariant : AppTheme.slate200),
+                size: 48,
+                color:
+                    isDark ? AppTheme.darkOutlineVariant : AppTheme.slate200),
             const SizedBox(height: 12),
             Text(message,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                    color: isDark ? AppTheme.darkOnSurfaceVariant : AppTheme.slate500, fontSize: 14)),
+                    color: isDark
+                        ? AppTheme.darkOnSurfaceVariant
+                        : AppTheme.slate500,
+                    fontSize: 14)),
           ],
         ),
       ),
@@ -2144,10 +2504,11 @@ class _TeamChip extends StatelessWidget {
         onTap: onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
-          padding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
-            color: selected ? AppTheme.primary : (isDark ? AppTheme.darkSurfaceContainer : Colors.white),
+            color: selected
+                ? AppTheme.primary
+                : (isDark ? AppTheme.darkSurfaceContainer : Colors.white),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
                 color: selected ? AppTheme.primary : AppTheme.slate200),
@@ -2156,8 +2517,7 @@ class _TeamChip extends StatelessWidget {
               style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  color:
-                      selected ? Colors.white : AppTheme.slate500)),
+                  color: selected ? Colors.white : AppTheme.slate500)),
         ),
       );
 }
@@ -2184,7 +2544,8 @@ class _SectionHeader extends StatelessWidget {
             style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
-                color: isDark ? AppTheme.darkOnSurface : const Color(0xFF0F172A))),
+                color:
+                    isDark ? AppTheme.darkOnSurface : const Color(0xFF0F172A))),
       ],
     );
   }
@@ -2221,12 +2582,9 @@ class _SummaryCard extends StatelessWidget {
             const SizedBox(height: 4),
             Text(value,
                 style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w800,
-                    color: color)),
+                    fontSize: 22, fontWeight: FontWeight.w800, color: color)),
             Text(unit,
-                style: const TextStyle(
-                    fontSize: 10, color: AppTheme.slate500)),
+                style: const TextStyle(fontSize: 10, color: AppTheme.slate500)),
           ],
         ),
       );
@@ -2245,15 +2603,18 @@ class _LeaderboardCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        padding:
-            const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
-          color: Theme.of(context).brightness == Brightness.dark ? AppTheme.darkSurfaceContainer : AppTheme.surface,
+          color: Theme.of(context).brightness == Brightness.dark
+              ? AppTheme.darkSurfaceContainer
+              : AppTheme.surface,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
               color: isTop
                   ? AppTheme.amber.withValues(alpha: 0.5)
-                  : (Theme.of(context).brightness == Brightness.dark ? AppTheme.darkOutlineVariant : AppTheme.slate200)),
+                  : (Theme.of(context).brightness == Brightness.dark
+                      ? AppTheme.darkOutlineVariant
+                      : AppTheme.slate200)),
         ),
         child: Row(
           children: [
@@ -2263,7 +2624,13 @@ class _LeaderboardCard extends StatelessWidget {
                 width: 28,
                 height: 28,
                 decoration: BoxDecoration(
-                  color: isTop ? (isDark ? const Color(0xFF4A3C2A) : const Color(0xFFFFF7ED)) : (isDark ? AppTheme.darkPrimaryContainer : AppTheme.primaryBg),
+                  color: isTop
+                      ? (isDark
+                          ? const Color(0xFF4A3C2A)
+                          : const Color(0xFFFFF7ED))
+                      : (isDark
+                          ? AppTheme.darkPrimaryContainer
+                          : AppTheme.primaryBg),
                   shape: BoxShape.circle,
                 ),
                 child: Center(
@@ -2272,7 +2639,9 @@ class _LeaderboardCard extends StatelessWidget {
                           fontSize: 11,
                           fontWeight: FontWeight.w800,
                           color: isTop
-                              ? (isDark ? AppTheme.darkTertiary : const Color(0xFFEA580C))
+                              ? (isDark
+                                  ? AppTheme.darkTertiary
+                                  : const Color(0xFFEA580C))
                               : AppTheme.primary)),
                 ),
               );
@@ -2309,8 +2678,11 @@ class _LeaderboardCard extends StatelessWidget {
                 children: [
                   Text(entry.memberName,
                       style: TextStyle(
-                          fontWeight: FontWeight.w700, fontSize: 13,
-                          color: Theme.of(context).brightness == Brightness.dark ? AppTheme.darkOnSurface : Colors.black),
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13,
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? AppTheme.darkOnSurface
+                              : Colors.black),
                       overflow: TextOverflow.ellipsis),
                   const SizedBox(height: 2),
                   TeamBadge(team: entry.team),

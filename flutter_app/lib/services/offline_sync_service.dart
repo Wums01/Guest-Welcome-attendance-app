@@ -39,7 +39,7 @@ class OfflineSyncService {
 
     _db = await openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE pending_clockins (
@@ -49,10 +49,18 @@ class OfflineSyncService {
             status TEXT NOT NULL,
             method TEXT NOT NULL,
             clocked_at TEXT NOT NULL,
+            position_label TEXT,
             created_at TEXT NOT NULL,
             synced INTEGER DEFAULT 0
           )
         ''');
+      },
+      onUpgrade: (db, oldVersion, newVersion) async {
+        if (oldVersion < 2) {
+          await db.execute(
+            'ALTER TABLE pending_clockins ADD COLUMN position_label TEXT',
+          );
+        }
       },
     );
 
@@ -67,6 +75,7 @@ class OfflineSyncService {
     required AttendanceStatus status,
     required ClockInMethod method,
     required DateTime clockedAt,
+    String? positionLabel,
   }) async {
     try {
       final db = await _getDb();
@@ -79,12 +88,14 @@ class OfflineSyncService {
           'status': status.value,
           'method': method.value,
           'clocked_at': clockedAt.toIso8601String(),
+          'position_label': positionLabel?.trim().toUpperCase(),
           'created_at': DateTime.now().toIso8601String(),
           'synced': 0,
         },
         conflictAlgorithm: ConflictAlgorithm.replace,
       );
-      AppLogger.info(_tag, 'Pending offline clock-in saved: $memberId in $sessionId');
+      AppLogger.info(
+          _tag, 'Pending offline clock-in saved: $memberId in $sessionId');
     } catch (e) {
       AppLogger.error(_tag, 'Failed to save pending clock-in: $e', e, null);
     }

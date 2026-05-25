@@ -24,6 +24,7 @@ class ClockIn {
     required this.status,
     required this.method,
     required this.clockedAt,
+    this.positionLabel,
   });
 
   final String id;
@@ -31,6 +32,7 @@ class ClockIn {
   final String memberId;
   final AttendanceStatus status;
   final ClockInMethod method;
+  final String? positionLabel;
 
   /// The canonical timestamp for this attendance record.
   /// For an absent→present upgrade this is updated to the time of upgrade.
@@ -46,6 +48,7 @@ class ClockIn {
       status: AttendanceStatus.fromValue(json['status'] as String),
       method: ClockInMethod.fromValue(json['method'] as String),
       clockedAt: DateTime.parse(json['clocked_at'] as String),
+      positionLabel: json['position_label'] as String?,
     );
   }
 
@@ -56,6 +59,7 @@ class ClockIn {
         'status': status.value,
         'method': method.value,
         'clocked_at': clockedAt.toIso8601String(),
+        'position_label': positionLabel,
       };
 
   Map<String, dynamic> toInsertJson() => {
@@ -64,12 +68,14 @@ class ClockIn {
         'status': status.value,
         'method': method.value,
         'clocked_at': clockedAt.toIso8601String(),
+        if (positionLabel != null) 'position_label': positionLabel,
       };
 
   ClockIn copyWith({
     AttendanceStatus? status,
     ClockInMethod? method,
     DateTime? clockedAt,
+    String? positionLabel,
   }) {
     return ClockIn(
       id: id,
@@ -78,6 +84,7 @@ class ClockIn {
       status: status ?? this.status,
       method: method ?? this.method,
       clockedAt: clockedAt ?? this.clockedAt,
+      positionLabel: positionLabel ?? this.positionLabel,
     );
   }
 }

@@ -31,11 +31,13 @@ class MemberVerificationScreen extends StatefulWidget {
     required this.member,
     required this.entryTime,
     this.status = AttendanceStatus.present,
+    this.positionLabel,
   });
 
   final Member member;
   final DateTime entryTime;
   final AttendanceStatus status;
+  final String? positionLabel;
 
   @override
   State<MemberVerificationScreen> createState() =>
@@ -71,20 +73,16 @@ class _MemberVerificationScreenState extends State<MemberVerificationScreen>
     final isMobile = MediaQuery.of(context).size.width < 600;
 
     return Scaffold(
-      backgroundColor: isDarkMode
-          ? AppTheme.darkSurface
-          : AppTheme.background,
+      backgroundColor: isDarkMode ? AppTheme.darkSurface : AppTheme.background,
       appBar: AppBar(
-        backgroundColor: isDarkMode
-            ? AppTheme.darkSurface
-            : AppTheme.background,
+        backgroundColor:
+            isDarkMode ? AppTheme.darkSurface : AppTheme.background,
         elevation: 0,
         leading: IconButton(
           icon: Icon(
             Icons.arrow_back,
-            color: isDarkMode
-                ? AppTheme.darkOnSurface
-                : const Color(0xFF0F172A),
+            color:
+                isDarkMode ? AppTheme.darkOnSurface : const Color(0xFF0F172A),
           ),
           onPressed: () => context.pop(),
         ),
@@ -101,9 +99,8 @@ class _MemberVerificationScreenState extends State<MemberVerificationScreen>
           IconButton(
             icon: Icon(
               Icons.more_vert,
-              color: isDarkMode
-                  ? AppTheme.darkOnSurface
-                  : const Color(0xFF0F172A),
+              color:
+                  isDarkMode ? AppTheme.darkOnSurface : const Color(0xFF0F172A),
             ),
             onPressed: () {
               // Menu options for settings, etc.
@@ -267,9 +264,8 @@ class _MemberVerificationScreenState extends State<MemberVerificationScreen>
           clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: isDarkMode
-                ? AppTheme.darkSurfaceContainer
-                : AppTheme.primaryBg,
+            color:
+                isDarkMode ? AppTheme.darkSurfaceContainer : AppTheme.primaryBg,
             border: Border.all(
               color: isDarkMode
                   ? AppTheme.darkSurfaceContainerHigh
@@ -378,14 +374,10 @@ class _MemberVerificationScreenState extends State<MemberVerificationScreen>
 
     return Container(
       decoration: BoxDecoration(
-        color: isDarkMode
-            ? AppTheme.darkSurfaceContainer
-            : AppTheme.surface,
+        color: isDarkMode ? AppTheme.darkSurfaceContainer : AppTheme.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isDarkMode
-              ? AppTheme.darkOutlineVariant
-              : AppTheme.slate200,
+          color: isDarkMode ? AppTheme.darkOutlineVariant : AppTheme.slate200,
         ),
       ),
       padding: EdgeInsets.all(isMobile ? 20 : 28),
@@ -398,9 +390,8 @@ class _MemberVerificationScreenState extends State<MemberVerificationScreen>
             style: TextStyle(
               fontSize: isMobile ? 24 : 28,
               fontWeight: FontWeight.w800,
-              color: isDarkMode
-                  ? AppTheme.darkOnSurface
-                  : const Color(0xFF0F172A),
+              color:
+                  isDarkMode ? AppTheme.darkOnSurface : const Color(0xFF0F172A),
               letterSpacing: -0.01,
             ),
           ),
@@ -514,6 +505,17 @@ class _MemberVerificationScreenState extends State<MemberVerificationScreen>
               ),
             ],
           ),
+
+          if (widget.positionLabel != null &&
+              widget.positionLabel!.trim().isNotEmpty) ...[
+            const SizedBox(height: 24),
+            _DetailValue(
+              label: 'POSITION',
+              value: widget.positionLabel!,
+              icon: Icons.place_outlined,
+              isDarkMode: isDarkMode,
+            ),
+          ],
         ],
       ),
     );
@@ -574,5 +576,53 @@ class _MemberVerificationScreenState extends State<MemberVerificationScreen>
       case AttendanceStatus.excused:
         return 'Excused';
     }
+  }
+}
+
+class _DetailValue extends StatelessWidget {
+  const _DetailValue({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.isDarkMode,
+  });
+
+  final String label;
+  final String value;
+  final IconData icon;
+  final bool isDarkMode;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(
+          icon,
+          size: 18,
+          color: isDarkMode ? AppTheme.darkOnSurfaceVariant : AppTheme.slate500,
+        ),
+        const SizedBox(width: 10),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color:
+                isDarkMode ? AppTheme.darkOnSurfaceVariant : AppTheme.slate500,
+            letterSpacing: 0.5,
+          ),
+        ),
+        const Spacer(),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w800,
+            color:
+                isDarkMode ? AppTheme.darkOnSurface : const Color(0xFF0F172A),
+          ),
+        ),
+      ],
+    );
   }
 }

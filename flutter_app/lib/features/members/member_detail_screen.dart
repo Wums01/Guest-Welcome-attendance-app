@@ -37,8 +37,7 @@ import '../../core/app_logger.dart';
 // Providers — family, keyed by memberId
 // ---------------------------------------------------------------------------
 
-final _memberDetailProvider =
-    FutureProvider.family<Member?, String>((ref, id) {
+final _memberDetailProvider = FutureProvider.family<Member?, String>((ref, id) {
   return ref.read(memberServiceProvider).getMemberById(id);
 });
 
@@ -49,7 +48,9 @@ final _memberClockInsProvider =
 
 final _memberAchievementsProvider =
     FutureProvider.family<List<Achievement>, String>((ref, memberId) {
-  return ref.read(achievementServiceProvider).getAchievementsForMember(memberId);
+  return ref
+      .read(achievementServiceProvider)
+      .getAchievementsForMember(memberId);
 });
 
 // ---------------------------------------------------------------------------
@@ -67,9 +68,13 @@ class MemberDetailScreen extends ConsumerWidget {
     final clockInsAsync = ref.watch(_memberClockInsProvider(memberId));
 
     return Scaffold(
-      backgroundColor: Theme.of(context).brightness == Brightness.dark ? AppTheme.darkSurface : AppTheme.background,
+      backgroundColor: Theme.of(context).brightness == Brightness.dark
+          ? AppTheme.darkSurface
+          : AppTheme.background,
       appBar: AppBar(
-        backgroundColor: Theme.of(context).brightness == Brightness.dark ? AppTheme.darkSurfaceContainer : AppTheme.surface,
+        backgroundColor: Theme.of(context).brightness == Brightness.dark
+            ? AppTheme.darkSurfaceContainer
+            : AppTheme.surface,
         leading: BackButton(onPressed: () => context.pop()),
         title: memberAsync.when(
           data: (m) => Text(m?.fullName ?? 'Member'),
@@ -102,7 +107,8 @@ class MemberDetailScreen extends ConsumerWidget {
       ),
       body: memberAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => const Center(child: Text('Unable to load member details. Please try again.')),
+        error: (e, _) => const Center(
+            child: Text('Unable to load member details. Please try again.')),
         data: (member) {
           if (member == null) {
             return const Center(child: Text('Member not found.'));
@@ -181,11 +187,11 @@ class MemberDetailScreen extends ConsumerWidget {
     );
   }
 
-  Future<void> _shareMemberOnWhatsApp(BuildContext context, Member member) async {
+  Future<void> _shareMemberOnWhatsApp(
+      BuildContext context, Member member) async {
     final firstName = member.fullName.split(' ').first;
     final code = member.offlineCode;
-    final msg =
-        'Hi $firstName!\n\n'
+    final msg = 'Hi $firstName!\n\n'
         "You've been registered as a member of the Guest Welcome Ministry!\n\n"
         'Your personal attendance code is:\n\n'
         '*$code*\n\n'
@@ -286,7 +292,8 @@ class _ProfileCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: isDark ? AppTheme.darkSurfaceContainer : AppTheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: isDark ? AppTheme.darkOutlineVariant : AppTheme.slate200),
+        border: Border.all(
+            color: isDark ? AppTheme.darkOutlineVariant : AppTheme.slate200),
       ),
       child: Column(
         children: [
@@ -299,7 +306,8 @@ class _ProfileCard extends StatelessWidget {
           Text(
             member.fullName,
             style: TextStyle(
-                fontSize: 18, fontWeight: FontWeight.w800,
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
                 color: isDark ? AppTheme.darkOnSurface : Colors.black),
             textAlign: TextAlign.center,
           ),
@@ -311,17 +319,21 @@ class _ProfileCard extends StatelessWidget {
               if (member.isMarried) ...[
                 const SizedBox(width: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 3),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF3D0D1F) : const Color(0xFFFFF1F2),
+                    color: isDark
+                        ? const Color(0xFF3D0D1F)
+                        : const Color(0xFFFFF1F2),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
                     'Married',
                     style: TextStyle(
                         fontSize: 11,
-                        color: isDark ? const Color(0xFFFF69B4) : const Color(0xFFE11D48),
+                        color: isDark
+                            ? const Color(0xFFFF69B4)
+                            : const Color(0xFFE11D48),
                         fontWeight: FontWeight.w600),
                   ),
                 ),
@@ -338,8 +350,8 @@ class _ProfileCard extends StatelessWidget {
                 const SizedBox(width: 6),
                 Text(
                   member.phone,
-                  style: const TextStyle(
-                      fontSize: 13, color: AppTheme.slate500),
+                  style:
+                      const TextStyle(fontSize: 13, color: AppTheme.slate500),
                 ),
                 const SizedBox(width: 10),
                 GestureDetector(
@@ -350,8 +362,8 @@ class _ProfileCard extends StatelessWidget {
                     }
                   },
                   child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
                       color: AppTheme.primary,
                       borderRadius: BorderRadius.circular(8),
@@ -389,8 +401,8 @@ class _ProfileCard extends StatelessWidget {
                 const SizedBox(width: 6),
                 Text(
                   'Birthday: ${member.birthdayMD}',
-                  style: const TextStyle(
-                      fontSize: 12, color: AppTheme.slate500),
+                  style:
+                      const TextStyle(fontSize: 12, color: AppTheme.slate500),
                 ),
                 if (member.anniversaryMD != null) ...[
                   const SizedBox(width: 16),
@@ -399,8 +411,8 @@ class _ProfileCard extends StatelessWidget {
                   const SizedBox(width: 6),
                   Text(
                     'Anniversary: ${member.anniversaryMD}',
-                    style: const TextStyle(
-                        fontSize: 12, color: AppTheme.slate500),
+                    style:
+                        const TextStyle(fontSize: 12, color: AppTheme.slate500),
                   ),
                 ],
               ],
@@ -438,8 +450,7 @@ class _StatPill extends StatelessWidget {
             ),
             TextSpan(
               text: label,
-              style: const TextStyle(
-                  fontSize: 11, color: AppTheme.slate500),
+              style: const TextStyle(fontSize: 11, color: AppTheme.slate500),
             ),
           ],
         ),
@@ -464,7 +475,8 @@ class _CodeQrCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: isDark ? AppTheme.darkSurfaceContainer : AppTheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: isDark ? AppTheme.darkOutlineVariant : AppTheme.slate200),
+        border: Border.all(
+            color: isDark ? AppTheme.darkOutlineVariant : AppTheme.slate200),
       ),
       child: Column(
         children: [
@@ -473,14 +485,14 @@ class _CodeQrCard extends StatelessWidget {
               Text(
                 'Attendance Code',
                 style: TextStyle(
-                    fontSize: 14, fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
                     color: isDark ? AppTheme.darkOnSurface : Colors.black),
               ),
               const Spacer(),
               GestureDetector(
                 onTap: () {
-                  Clipboard.setData(
-                      ClipboardData(text: member.offlineCode));
+                  Clipboard.setData(ClipboardData(text: member.offlineCode));
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content: Text('Code copied to clipboard!'),
@@ -489,8 +501,8 @@ class _CodeQrCard extends StatelessWidget {
                   );
                 },
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 10, vertical: 5),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
                     color: AppTheme.primaryBg,
                     borderRadius: BorderRadius.circular(8),
@@ -518,9 +530,13 @@ class _CodeQrCard extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: 14),
             decoration: BoxDecoration(
-              color: isDark ? AppTheme.darkSurfaceContainerHigh : const Color(0xFFF8FAFC),
+              color: isDark
+                  ? AppTheme.darkSurfaceContainerHigh
+                  : const Color(0xFFF8FAFC),
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: isDark ? AppTheme.darkOutlineVariant : AppTheme.slate200),
+              border: Border.all(
+                  color:
+                      isDark ? AppTheme.darkOutlineVariant : AppTheme.slate200),
             ),
             child: Center(
               child: Text(
@@ -529,7 +545,8 @@ class _CodeQrCard extends StatelessWidget {
                   fontSize: 32,
                   fontWeight: FontWeight.w900,
                   letterSpacing: 6,
-                  color: isDark ? AppTheme.darkOnSurface : const Color(0xFF0F172A),
+                  color:
+                      isDark ? AppTheme.darkOnSurface : const Color(0xFF0F172A),
                   fontFamily: 'monospace',
                 ),
               ),
@@ -562,13 +579,13 @@ class _ClockInRow extends StatelessWidget {
     final color = switch (clockIn.status) {
       AttendanceStatus.present => AppTheme.success,
       AttendanceStatus.excused => AppTheme.primary,
-      AttendanceStatus.absent  => AppTheme.error,
+      AttendanceStatus.absent => AppTheme.error,
     };
 
     final label = switch (clockIn.status) {
       AttendanceStatus.present => 'Present',
       AttendanceStatus.excused => 'Excused',
-      AttendanceStatus.absent  => 'Absent',
+      AttendanceStatus.absent => 'Absent',
     };
 
     return Container(
@@ -576,7 +593,8 @@ class _ClockInRow extends StatelessWidget {
       decoration: BoxDecoration(
         color: isDark ? AppTheme.darkSurfaceContainer : AppTheme.surface,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: isDark ? AppTheme.darkOutlineVariant : AppTheme.slate200),
+        border: Border.all(
+            color: isDark ? AppTheme.darkOutlineVariant : AppTheme.slate200),
       ),
       child: Row(
         children: [
@@ -590,18 +608,36 @@ class _ClockInRow extends StatelessWidget {
           ),
           const SizedBox(width: 10),
           Expanded(
-            child: Text(
-              _formatDate(clockIn.clockedAt),
-              style: TextStyle(
-                  fontSize: 13,
-                  color: isDark ? AppTheme.darkOnSurface : Colors.black),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _formatDate(clockIn.clockedAt),
+                  style: TextStyle(
+                      fontSize: 13,
+                      color: isDark ? AppTheme.darkOnSurface : Colors.black),
+                ),
+                if (clockIn.positionLabel != null &&
+                    clockIn.positionLabel!.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    'Position ${clockIn.positionLabel}',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: AppTheme.primary,
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
           Container(
-            padding: const EdgeInsets.symmetric(
-                horizontal: 8, vertical: 3),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
             decoration: BoxDecoration(
-              color: isDark ? color.withValues(alpha: 0.15) : color.withValues(alpha: 0.1),
+              color: isDark
+                  ? color.withValues(alpha: 0.15)
+                  : color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(6),
             ),
             child: Text(
@@ -620,8 +656,19 @@ class _ClockInRow extends StatelessWidget {
 
   String _formatDate(DateTime dt) {
     final months = [
-      '', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      '',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec'
     ];
     return '${months[dt.month]} ${dt.day}, ${dt.year}';
   }
@@ -632,18 +679,15 @@ class _ClockInRow extends StatelessWidget {
 // ---------------------------------------------------------------------------
 
 class _EditMemberSheet extends ConsumerStatefulWidget {
-  const _EditMemberSheet(
-      {required this.member, required this.onSaved});
+  const _EditMemberSheet({required this.member, required this.onSaved});
   final Member member;
   final VoidCallback onSaved;
 
   @override
-  ConsumerState<_EditMemberSheet> createState() =>
-      _EditMemberSheetState();
+  ConsumerState<_EditMemberSheet> createState() => _EditMemberSheetState();
 }
 
-class _EditMemberSheetState
-    extends ConsumerState<_EditMemberSheet> {
+class _EditMemberSheetState extends ConsumerState<_EditMemberSheet> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameCtrl;
   late final TextEditingController _phoneCtrl;
@@ -662,8 +706,7 @@ class _EditMemberSheetState
     _nameCtrl = TextEditingController(text: widget.member.fullName);
     _phoneCtrl = TextEditingController(text: widget.member.phone);
     _bdCtrl = TextEditingController(text: widget.member.birthdayMD);
-    _annCtrl = TextEditingController(
-        text: widget.member.anniversaryMD ?? '');
+    _annCtrl = TextEditingController(text: widget.member.anniversaryMD ?? '');
     _team = widget.member.team;
     _isMarried = widget.member.isMarried;
   }
@@ -686,8 +729,7 @@ class _EditMemberSheetState
           mainAxisSize: MainAxisSize.min,
           children: [
             const Text('Select Photo Source',
-                style: TextStyle(
-                    fontWeight: FontWeight.w700, fontSize: 16)),
+                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
             const SizedBox(height: 16),
             ListTile(
               leading: const Icon(Icons.camera_alt),
@@ -746,8 +788,7 @@ class _EditMemberSheetState
     DateTime initial = DateTime(2000);
     if (parts.length == 2) {
       try {
-        initial = DateTime(
-            2000, int.parse(parts[0]), int.parse(parts[1]));
+        initial = DateTime(2000, int.parse(parts[0]), int.parse(parts[1]));
       } catch (_) {}
     }
     final picked = await showDatePicker(
@@ -758,8 +799,7 @@ class _EditMemberSheetState
       helpText: 'Pick month & day',
     );
     if (picked != null && mounted) {
-      ctrl.text =
-          '${picked.month.toString().padLeft(2, '0')}-'
+      ctrl.text = '${picked.month.toString().padLeft(2, '0')}-'
           '${picked.day.toString().padLeft(2, '0')}';
     }
   }
@@ -782,12 +822,11 @@ class _EditMemberSheetState
           tag: 'EditMemberSheet',
         );
         try {
-          photoUrl = await ref
-              .read(imageStorageServiceProvider)
-              .uploadMemberPhoto(
-                memberId: widget.member.id,
-                imageFile: _photoFile!,
-              );
+          photoUrl =
+              await ref.read(imageStorageServiceProvider).uploadMemberPhoto(
+                    memberId: widget.member.id,
+                    imageFile: _photoFile!,
+                  );
           AppLogger.info(
             '✓ Photo uploaded, URL: $photoUrl',
             tag: 'EditMemberSheet',
@@ -866,8 +905,7 @@ class _EditMemberSheetState
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text('Edit Member',
-                style: TextStyle(
-                    fontSize: 18, fontWeight: FontWeight.w800)),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
             const SizedBox(height: 16),
             // ── Photo section ──────────────────────────────────────────────
             Center(
@@ -891,16 +929,14 @@ class _EditMemberSheetState
                             onTap: _pickPhoto,
                             child: _photoBytes != null
                                 ? ClipRRect(
-                                    borderRadius:
-                                        BorderRadius.circular(12),
+                                    borderRadius: BorderRadius.circular(12),
                                     child: Image.memory(
                                       _photoBytes!,
                                       fit: BoxFit.cover,
                                     ),
                                   )
                                 : (widget.member.photoUrl != null &&
-                                        widget
-                                            .member.photoUrl!.isNotEmpty)
+                                        widget.member.photoUrl!.isNotEmpty)
                                     ? Image.network(
                                         widget.member.photoUrl!,
                                         fit: BoxFit.cover,
@@ -956,8 +992,7 @@ class _EditMemberSheetState
             const SizedBox(height: 16),
             TextFormField(
               controller: _nameCtrl,
-              decoration:
-                  const InputDecoration(labelText: 'Full name*'),
+              decoration: const InputDecoration(labelText: 'Full name*'),
               validator: (v) =>
                   v == null || v.trim().isEmpty ? 'Required' : null,
             ),
@@ -965,8 +1000,7 @@ class _EditMemberSheetState
             TextFormField(
               controller: _phoneCtrl,
               keyboardType: TextInputType.phone,
-              decoration:
-                  const InputDecoration(labelText: 'Phone'),
+              decoration: const InputDecoration(labelText: 'Phone'),
             ),
             const SizedBox(height: 12),
             TextFormField(
@@ -1000,8 +1034,7 @@ class _EditMemberSheetState
                             color: _team == t
                                 ? AppTheme.primary
                                 : AppTheme.surface,
-                            borderRadius:
-                                BorderRadius.circular(20),
+                            borderRadius: BorderRadius.circular(20),
                             border: Border.all(
                                 color: _team == t
                                     ? AppTheme.primary
@@ -1012,9 +1045,8 @@ class _EditMemberSheetState
                             style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
-                              color: _team == t
-                                  ? Colors.white
-                                  : AppTheme.slate500,
+                              color:
+                                  _team == t ? Colors.white : AppTheme.slate500,
                             ),
                           ),
                         ),
@@ -1026,8 +1058,7 @@ class _EditMemberSheetState
               children: [
                 Switch(
                   value: _isMarried,
-                  onChanged: (v) =>
-                      setState(() => _isMarried = v),
+                  onChanged: (v) => setState(() => _isMarried = v),
                   activeThumbColor: AppTheme.primary,
                 ),
                 const SizedBox(width: 8),
@@ -1064,8 +1095,7 @@ class _EditMemberSheetState
                         child: CircularProgressIndicator(
                             color: Colors.white, strokeWidth: 2))
                     : const Text('Save Changes',
-                        style: TextStyle(
-                            fontWeight: FontWeight.w700)),
+                        style: TextStyle(fontWeight: FontWeight.w700)),
               ),
             ),
           ],
@@ -1085,8 +1115,7 @@ class _AchievementsSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final achievementsAsync =
-        ref.watch(_memberAchievementsProvider(memberId));
+    final achievementsAsync = ref.watch(_memberAchievementsProvider(memberId));
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return achievementsAsync.when(
@@ -1105,9 +1134,7 @@ class _AchievementsSection extends ConsumerWidget {
                 style: TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.w700,
-                  color: isDark
-                      ? Colors.white
-                      : const Color(0xFF0F172A),
+                  color: isDark ? Colors.white : const Color(0xFF0F172A),
                 ),
               ),
             ),

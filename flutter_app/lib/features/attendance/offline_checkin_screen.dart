@@ -26,6 +26,7 @@ import '../../services/member_service.dart';
 import '../../services/session_service.dart';
 import '../../app_theme/app_theme.dart';
 import '../../core/utils/date_utils.dart';
+import 'position_assignment_dialog.dart';
 
 // ---------------------------------------------------------------------------
 // Providers
@@ -40,8 +41,7 @@ final _testModeProvider = FutureProvider<bool>((ref) async {
   return data?['value'] == 'true';
 });
 
-final _codeSessionProvider =
-    FutureProvider.family<Session?, String>((ref, id) {
+final _codeSessionProvider = FutureProvider.family<Session?, String>((ref, id) {
   return ref.read(sessionServiceProvider).getSessionById(id);
 });
 
@@ -58,8 +58,7 @@ class OfflineCheckinScreen extends ConsumerStatefulWidget {
       _OfflineCheckinScreenState();
 }
 
-class _OfflineCheckinScreenState
-    extends ConsumerState<OfflineCheckinScreen> {
+class _OfflineCheckinScreenState extends ConsumerState<OfflineCheckinScreen> {
   String _code = '';
   _FeedbackState _feedback = _FeedbackState.idle;
   String _message = '';
@@ -108,19 +107,16 @@ class _OfflineCheckinScreenState
 
     // Re-check gate state right now — the UI may not have refreshed yet
     // even if the session closed a few seconds ago.
-    final session = ref
-        .read(_codeSessionProvider(widget.sessionId))
-        .valueOrNull;
-    final testMode =
-        ref.read(_testModeProvider).valueOrNull ?? false;
+    final session =
+        ref.read(_codeSessionProvider(widget.sessionId)).valueOrNull;
+    final testMode = ref.read(_testModeProvider).valueOrNull ?? false;
     if (session != null && session.startTime != null && !testMode) {
-      final gate = sessionGateState(
-          session.startTime, session.endTime, nowInLagos());
+      final gate =
+          sessionGateState(session.startTime, session.endTime, nowInLagos());
       if (gate == SessionGateState.closed) {
         setState(() {
           _feedback = _FeedbackState.error;
-          _message =
-              'Session is closed. Check-in is no longer available.';
+          _message = 'Session is closed. Check-in is no longer available.';
         });
         return;
       }
@@ -130,18 +126,31 @@ class _OfflineCheckinScreenState
 
     try {
       final submittedCode = _code;
-      final clockIn =
-          await ref.read(attendanceServiceProvider).clockInByOfflineCode(
-            sessionId: widget.sessionId,
-            code: submittedCode,
-            status: AttendanceStatus.present,
-          );
       final member = await ref
           .read(memberServiceProvider)
           .getMemberByOfflineCode(submittedCode);
       if (member == null) {
         throw Exception('Member not found');
       }
+
+      final options = await ref
+          .read(attendanceServiceProvider)
+          .getPositionOptionsForSession(widget.sessionId);
+      if (!mounted) return;
+      final positionLabel = await showPositionAssignmentDialog(
+        context: context,
+        memberName: member.fullName,
+        options: options,
+      );
+      if (!mounted) return;
+
+      final clockIn =
+          await ref.read(attendanceServiceProvider).clockInByOfflineCode(
+                sessionId: widget.sessionId,
+                code: submittedCode,
+                status: AttendanceStatus.present,
+                positionLabel: positionLabel,
+              );
 
       if (!mounted) return;
       await context.push(
@@ -150,6 +159,7 @@ class _OfflineCheckinScreenState
           'member': member,
           'entryTime': clockIn.clockedAt,
           'status': clockIn.status,
+          'positionLabel': clockIn.positionLabel,
         },
       );
 
@@ -189,8 +199,7 @@ class _OfflineCheckinScreenState
 
   @override
   Widget build(BuildContext context) {
-    final sessionAsync =
-        ref.watch(_codeSessionProvider(widget.sessionId));
+    final sessionAsync = ref.watch(_codeSessionProvider(widget.sessionId));
     final testModeAsync = ref.watch(_testModeProvider);
 
     return Scaffold(
@@ -202,9 +211,8 @@ class _OfflineCheckinScreenState
         automaticallyImplyLeading: false,
         title: const Text(
           'Check-in',
-          style: TextStyle(
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF0F172A)),
+          style:
+              TextStyle(fontWeight: FontWeight.w700, color: Color(0xFF0F172A)),
         ),
         actions: [
           IconButton(
@@ -215,9 +223,9 @@ class _OfflineCheckinScreenState
       ),
       body: SafeArea(
         child: sessionAsync.when(
-          loading: () =>
-              const Center(child: CircularProgressIndicator()),
-          error: (e, _) => const Center(child: Text('Unable to load. Please try again.')),
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (e, _) =>
+              const Center(child: Text('Unable to load. Please try again.')),
           data: (session) {
             if (session == null) {
               return Center(
@@ -234,8 +242,7 @@ class _OfflineCheckinScreenState
             }
 
             return testModeAsync.when(
-              loading: () =>
-                  const Center(child: CircularProgressIndicator()),
+              loading: () => const Center(child: CircularProgressIndicator()),
               // On error, fail open — show OTP keypad
               error: (_, __) => _buildOtpBody(),
               data: (testMode) {
@@ -253,8 +260,7 @@ class _OfflineCheckinScreenState
                   case SessionGateState.open:
                     return _buildOtpBody();
                   case SessionGateState.tooEarly:
-                    final ms = msUntilTime(
-                        session.startTime!, nowInLagos());
+                    final ms = msUntilTime(session.startTime!, nowInLagos());
                     return _buildTooEarlyBody(
                         session.startTime!, msToCountdown(ms));
                   case SessionGateState.closed:
@@ -305,8 +311,7 @@ class _OfflineCheckinScreenState
             const SizedBox(height: 8),
             Text(
               'Service opens at $startTime',
-              style: const TextStyle(
-                  fontSize: 14, color: AppTheme.slate500),
+              style: const TextStyle(fontSize: 14, color: AppTheme.slate500),
             ),
           ],
         ),
@@ -339,8 +344,7 @@ class _OfflineCheckinScreenState
             const Text(
               'Check-in for this service has ended.',
               textAlign: TextAlign.center,
-              style: TextStyle(
-                  fontSize: 14, color: AppTheme.slate500),
+              style: TextStyle(fontSize: 14, color: AppTheme.slate500),
             ),
             const SizedBox(height: 32),
             OutlinedButton(
@@ -395,8 +399,7 @@ class _Body extends StatelessWidget {
               color: Color(0xFFF1F5F9),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.church,
-                color: AppTheme.primary, size: 28),
+            child: const Icon(Icons.church, color: AppTheme.primary, size: 28),
           ),
           const SizedBox(height: 14),
 
@@ -435,8 +438,7 @@ class _Body extends StatelessWidget {
             child: OutlinedButton.icon(
               icon: const Icon(Icons.qr_code_scanner, size: 18),
               label: const Text('Scan QR Code instead'),
-              onPressed: () =>
-                  context.push('/sessions/$sessionId/checkin'),
+              onPressed: () => context.push('/sessions/$sessionId/checkin'),
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppTheme.primary,
                 side: const BorderSide(color: AppTheme.primary),
@@ -473,8 +475,8 @@ class _Body extends StatelessWidget {
                           strokeWidth: 2, color: Colors.white))
                   : const Text(
                       'Confirm Check-in  →',
-                      style: TextStyle(
-                          fontSize: 15, fontWeight: FontWeight.w700),
+                      style:
+                          TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
                     ),
             ),
           ),
@@ -535,9 +537,7 @@ class _CodeDisplay extends StatelessWidget {
             color: Colors.white,
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
-              color: filled || isCurrent
-                  ? _borderColor
-                  : AppTheme.slate200,
+              color: filled || isCurrent ? _borderColor : AppTheme.slate200,
               width: filled || isCurrent ? 2 : 1,
             ),
           ),
@@ -564,8 +564,7 @@ class _CodeDisplay extends StatelessWidget {
 // ---------------------------------------------------------------------------
 
 class _FeedbackBanner extends StatelessWidget {
-  const _FeedbackBanner(
-      {required this.feedback, required this.message});
+  const _FeedbackBanner({required this.feedback, required this.message});
   final _FeedbackState feedback;
   final String message;
 
@@ -597,8 +596,7 @@ class _FeedbackBanner extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding:
-          const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(12),
@@ -608,8 +606,7 @@ class _FeedbackBanner extends StatelessWidget {
           Icon(icon, size: 18, color: fg),
           const SizedBox(width: 8),
           Expanded(
-              child: Text(message,
-                  style: TextStyle(fontSize: 13, color: fg))),
+              child: Text(message, style: TextStyle(fontSize: 13, color: fg))),
         ],
       ),
     );
@@ -734,9 +731,7 @@ class _KeyButton extends StatelessWidget {
               style: TextStyle(
                 fontSize: isAction ? 18 : 22,
                 fontWeight: FontWeight.w600,
-                color: enabled
-                    ? AppTheme.primary
-                    : const Color(0xFFCBD5E1),
+                color: enabled ? AppTheme.primary : const Color(0xFFCBD5E1),
               ),
             ),
           ),

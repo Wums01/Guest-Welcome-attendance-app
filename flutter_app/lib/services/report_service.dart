@@ -11,6 +11,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/attendance_summary.dart';
 import '../models/attendance_export_entry.dart';
+import '../models/follow_up_report_entry.dart';
 import '../models/leaderboard_entry.dart';
 import '../core/logger.dart';
 
@@ -44,10 +45,10 @@ class ReportService {
           .select()
           .eq('session_date', date)
           .order('session_name');
-      final summaries = (data as List)
-          .map((e) => AttendanceSummary.fromJson(e))
-          .toList();
-      AppLogger.info(_tag, 'getDailyReport($date) → ${summaries.length} summaries');
+      final summaries =
+          (data as List).map((e) => AttendanceSummary.fromJson(e)).toList();
+      AppLogger.info(
+          _tag, 'getDailyReport($date) → ${summaries.length} summaries');
       return summaries;
     } catch (e, stack) {
       AppLogger.error(_tag, 'getDailyReport($date) failed', e, stack);
@@ -59,8 +60,7 @@ class ReportService {
 
   /// Returns the attendance leaderboard for [yearMonth] (format: "YYYY-MM"),
   /// sorted by total_points descending, with rank assigned.
-  Future<List<LeaderboardEntry>> getMonthlyLeaderboard(
-      String yearMonth) async {
+  Future<List<LeaderboardEntry>> getMonthlyLeaderboard(String yearMonth) async {
     AppLogger.info(_tag, 'getMonthlyLeaderboard($yearMonth)');
     try {
       final data = await _client
@@ -75,10 +75,12 @@ class ReportService {
           .entries
           .map((e) => LeaderboardEntry.fromJson(e.value, rank: e.key + 1))
           .toList();
-      AppLogger.info(_tag, 'getMonthlyLeaderboard($yearMonth) → ${entries.length} entries');
+      AppLogger.info(_tag,
+          'getMonthlyLeaderboard($yearMonth) → ${entries.length} entries');
       return entries;
     } catch (e, stack) {
-      AppLogger.error(_tag, 'getMonthlyLeaderboard($yearMonth) failed', e, stack);
+      AppLogger.error(
+          _tag, 'getMonthlyLeaderboard($yearMonth) failed', e, stack);
       rethrow;
     }
   }
@@ -97,16 +99,14 @@ class ReportService {
           .order('total_points', ascending: false)
           .order('full_name', ascending: true);
 
-      final entries = (data as List)
-          .asMap()
-          .entries
-          .map((e) {
+      final entries = (data as List).asMap().entries.map((e) {
         // Ensure `year_month` is populated for the LeaderboardEntry model
         final row = Map<String, dynamic>.from(e.value);
         row['year_month'] = year;
         return LeaderboardEntry.fromJson(row, rank: e.key + 1);
       }).toList();
-      AppLogger.info(_tag, 'getYearlyLeaderboard($year) → ${entries.length} entries');
+      AppLogger.info(
+          _tag, 'getYearlyLeaderboard($year) → ${entries.length} entries');
       return entries;
     } catch (e, stack) {
       AppLogger.error(_tag, 'getYearlyLeaderboard($year) failed', e, stack);
@@ -129,18 +129,14 @@ class ReportService {
           .lte('session_date', endDate)
           .order('session_date')
           .order('session_name');
-      final summaries = (data as List)
-          .map((e) => AttendanceSummary.fromJson(e))
-          .toList();
+      final summaries =
+          (data as List).map((e) => AttendanceSummary.fromJson(e)).toList();
       AppLogger.info(
           _tag, 'getSessionsByDateRange → ${summaries.length} summaries');
       return summaries;
     } catch (e, stack) {
-      AppLogger.error(
-          _tag,
-          'getSessionsByDateRange($startDate → $endDate) failed',
-          e,
-          stack);
+      AppLogger.error(_tag,
+          'getSessionsByDateRange($startDate → $endDate) failed', e, stack);
       rethrow;
     }
   }
@@ -162,14 +158,16 @@ class ReportService {
       AppLogger.info(_tag, 'getMonthlyGuestTotal($yearMonth) → $total guests');
       return total;
     } catch (e, stack) {
-      AppLogger.error(_tag, 'getMonthlyGuestTotal($yearMonth) failed', e, stack);
+      AppLogger.error(
+          _tag, 'getMonthlyGuestTotal($yearMonth) failed', e, stack);
       rethrow;
     }
   }
 
   /// Returns raw attendance rows for all sessions on a date.
   /// Used for workbook export where each session gets its own sheet.
-  Future<List<AttendanceExportEntry>> getAttendanceExportRows(String date) async {
+  Future<List<AttendanceExportEntry>> getAttendanceExportRows(
+      String date) async {
     AppLogger.info(_tag, 'getAttendanceExportRows($date)');
     try {
       final sessions = await _client
@@ -178,9 +176,8 @@ class ReportService {
           .eq('date', date)
           .order('name');
 
-      final sessionIds = (sessions as List)
-          .map((row) => row['id'] as String)
-          .toList();
+      final sessionIds =
+          (sessions as List).map((row) => row['id'] as String).toList();
 
       if (sessionIds.isEmpty) {
         AppLogger.info(_tag, 'getAttendanceExportRows($date) → 0 rows');
@@ -190,7 +187,7 @@ class ReportService {
       final data = await _client
           .from('clock_ins')
           .select(
-            'session_id,status,clocked_at,'
+            'session_id,status,clocked_at,position_label,'
             'members!clock_ins_member_id_fkey(full_name),'
             'sessions!clock_ins_session_id_fkey(name)',
           )
@@ -201,7 +198,8 @@ class ReportService {
       final rows = (data as List)
           .map((row) => AttendanceExportEntry.fromJson(row))
           .toList();
-      AppLogger.info(_tag, 'getAttendanceExportRows($date) → ${rows.length} rows');
+      AppLogger.info(
+          _tag, 'getAttendanceExportRows($date) → ${rows.length} rows');
       return rows;
     } catch (e, stack) {
       AppLogger.error(_tag, 'getAttendanceExportRows($date) failed', e, stack);
@@ -213,7 +211,8 @@ class ReportService {
     String startDate,
     String endDate,
   ) async {
-    AppLogger.info(_tag, 'getAttendanceExportRowsByDateRange($startDate → $endDate)');
+    AppLogger.info(
+        _tag, 'getAttendanceExportRowsByDateRange($startDate → $endDate)');
     try {
       final sessions = await _client
           .from('sessions')
@@ -223,9 +222,8 @@ class ReportService {
           .order('date')
           .order('name');
 
-      final sessionIds = (sessions as List)
-          .map((row) => row['id'] as String)
-          .toList();
+      final sessionIds =
+          (sessions as List).map((row) => row['id'] as String).toList();
 
       if (sessionIds.isEmpty) {
         AppLogger.info(
@@ -238,7 +236,7 @@ class ReportService {
       final data = await _client
           .from('clock_ins')
           .select(
-            'session_id,status,clocked_at,'
+            'session_id,status,clocked_at,position_label,'
             'members!clock_ins_member_id_fkey(full_name),'
             'sessions!clock_ins_session_id_fkey(name)',
           )
@@ -258,6 +256,56 @@ class ReportService {
       AppLogger.error(
         _tag,
         'getAttendanceExportRowsByDateRange($startDate → $endDate) failed',
+        e,
+        stack,
+      );
+      rethrow;
+    }
+  }
+
+  Future<List<FollowUpReportEntry>> getFollowUpReportRowsByDateRange(
+    String startDate,
+    String endDate,
+  ) async {
+    AppLogger.info(
+        _tag, 'getFollowUpReportRowsByDateRange($startDate → $endDate)');
+    try {
+      final data = await _client
+          .from('member_follow_up_actions')
+          .select(
+            'id,member_id,action_type,note,outcome_note,created_at,scheduled_follow_up_at,'
+            'members!member_follow_up_actions_member_id_fkey(full_name),'
+            'staff_users!member_follow_up_actions_created_by_staff_id_fkey(full_name)',
+          )
+          .gte('created_at', '${startDate}T00:00:00Z')
+          .lte('created_at', '${endDate}T23:59:59Z')
+          .order('created_at', ascending: false);
+
+      final rows = <FollowUpReportEntry>[];
+      for (final row in data as List) {
+        try {
+          final map = row is Map<String, dynamic>
+              ? row
+              : Map<String, dynamic>.from(row as Map);
+          rows.add(FollowUpReportEntry.fromJson(map));
+        } catch (parseError, parseStack) {
+          AppLogger.error(
+            _tag,
+            'Unable to parse follow-up report row: $row',
+            parseError,
+            parseStack,
+          );
+        }
+      }
+      AppLogger.info(
+        _tag,
+        'getFollowUpReportRowsByDateRange($startDate → $endDate) → ${rows.length} rows',
+      );
+      return rows;
+    } catch (e, stack) {
+      AppLogger.error(
+        _tag,
+        'getFollowUpReportRowsByDateRange($startDate → $endDate) failed',
         e,
         stack,
       );

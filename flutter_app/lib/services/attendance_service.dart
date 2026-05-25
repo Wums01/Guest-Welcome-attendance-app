@@ -50,42 +50,122 @@ class AttendanceService {
   static const _table = 'clock_ins';
   static const _followUpActionsTable = 'member_follow_up_actions';
   static const _tag = 'AttendanceService';
+  static const _defaultPositionOptions = [
+    'A1',
+    'A2',
+    'A3',
+    'A4',
+    'B1',
+    'B2',
+    'C1',
+    'C2',
+  ];
+  static const _followUpCooldown = Duration(days: 14);
 
   // ── Read ──────────────────────────────────────────────────────────────────
 
   Future<List<ClockIn>> getClockInsBySession(String sessionId) async {
     AppLogger.info(_tag, 'getClockInsBySession($sessionId)');
     try {
-      final data = await _client
-          .from(_table)
-          .select()
-          .eq('session_id', sessionId);
+      final data =
+          await _client.from(_table).select().eq('session_id', sessionId);
       final list = (data as List).map((e) => ClockIn.fromJson(e)).toList();
-      AppLogger.info(_tag, 'getClockInsBySession($sessionId) → ${list.length} records');
+      AppLogger.info(
+          _tag, 'getClockInsBySession($sessionId) → ${list.length} records');
       return list;
     } catch (e, stack) {
-      AppLogger.error(_tag, 'getClockInsBySession($sessionId) failed', e, stack);
+      AppLogger.error(
+          _tag, 'getClockInsBySession($sessionId) failed', e, stack);
       rethrow;
     }
   }
 
   Future<int> getClockInCountBySession(String sessionId) async {
     try {
-      final data = await _client
-          .from(_table)
-          .select('id')
-          .eq('session_id', sessionId);
+      final data =
+          await _client.from(_table).select('id').eq('session_id', sessionId);
       final count = (data as List).length;
       AppLogger.debug(_tag, 'getClockInCountBySession($sessionId) → $count');
       return count;
     } catch (e, stack) {
-      AppLogger.error(_tag, 'getClockInCountBySession($sessionId) failed', e, stack);
+      AppLogger.error(
+          _tag, 'getClockInCountBySession($sessionId) failed', e, stack);
       rethrow;
     }
   }
 
-  Future<ClockIn?> _findExisting(
-      String sessionId, String memberId) async {
+  Future<List<String>> getPositionOptionsForSession(String sessionId) async {
+    AppLogger.info(_tag, 'getPositionOptionsForSession($sessionId)');
+    try {
+      final labels = <String>[];
+      void addLabel(dynamic raw) {
+        final label = raw?.toString().trim();
+        if (label != null && label.isNotEmpty && !labels.contains(label)) {
+          labels.add(label);
+        }
+      }
+
+      final sessionOptions = await _client
+          .from('session_position_options')
+          .select('label')
+          .eq('session_id', sessionId)
+          .order('sort_order')
+          .order('label');
+      for (final row in sessionOptions as List) {
+        addLabel(row['label']);
+      }
+
+      if (labels.isEmpty) {
+        final session = await _client
+            .from('sessions')
+            .select('program_id')
+            .eq('id', sessionId)
+            .maybeSingle();
+        final programId = session?['program_id'] as String?;
+        if (programId != null) {
+          final programOptions = await _client
+              .from('program_position_options')
+              .select('label')
+              .eq('program_id', programId)
+              .order('sort_order')
+              .order('label');
+          for (final row in programOptions as List) {
+            addLabel(row['label']);
+          }
+        }
+      }
+
+      for (final label in _defaultPositionOptions) {
+        addLabel(label);
+      }
+
+      final usedPositions = await _client
+          .from(_table)
+          .select('position_label')
+          .eq('session_id', sessionId)
+          .not('position_label', 'is', null)
+          .order('position_label');
+      for (final row in usedPositions as List) {
+        addLabel(row['position_label']);
+      }
+
+      AppLogger.info(
+        _tag,
+        'getPositionOptionsForSession($sessionId) → ${labels.length} options',
+      );
+      return labels;
+    } catch (e, stack) {
+      AppLogger.error(
+        _tag,
+        'getPositionOptionsForSession($sessionId) failed',
+        e,
+        stack,
+      );
+      return _defaultPositionOptions;
+    }
+  }
+
+  Future<ClockIn?> _findExisting(String sessionId, String memberId) async {
     final data = await _client
         .from(_table)
         .select()
@@ -109,6 +189,7 @@ class AttendanceService {
     required String memberId,
     AttendanceStatus status = AttendanceStatus.present,
     ClockInMethod method = ClockInMethod.offlineCode,
+    String? positionLabel,
   }) async {
     AppLogger.info(
       _tag,
@@ -116,6 +197,7 @@ class AttendanceService {
     );
     try {
       final existing = await _findExisting(sessionId, memberId);
+      final normalizedPosition = _normalizePositionLabel(positionLabel);
 
       if (existing != null) {
         if (existing.status.isTerminal) {
@@ -136,6 +218,7 @@ class AttendanceService {
           'status': status.value,
           'method': method.value,
           'clocked_at': now,
+          'position_label': normalizedPosition,
         }).eq('id', existing.id);
 
         AppLogger.info(_tag, 'clockInMember → upgrade ok (id: ${existing.id})');
@@ -143,20 +226,22 @@ class AttendanceService {
           status: status,
           method: method,
           clockedAt: DateTime.parse(now),
+          positionLabel: normalizedPosition,
         );
       }
 
       // New record
-      AppLogger.info(_tag, 'clockInMember → inserting new record for member $memberId');
+      AppLogger.info(
+          _tag, 'clockInMember → inserting new record for member $memberId');
       final insert = {
         'session_id': sessionId,
         'member_id': memberId,
         'status': status.value,
         'method': method.value,
         'clocked_at': DateTime.now().toIso8601String(),
+        if (normalizedPosition != null) 'position_label': normalizedPosition,
       };
-      final data =
-          await _client.from(_table).insert(insert).select().single();
+      final data = await _client.from(_table).insert(insert).select().single();
       final clockIn = ClockIn.fromJson(data);
       AppLogger.info(_tag, 'clockInMember → inserted (id: ${clockIn.id})');
       return clockIn;
@@ -185,27 +270,36 @@ class AttendanceService {
     required String sessionId,
     required String code,
     AttendanceStatus status = AttendanceStatus.present,
+    String? positionLabel,
   }) async {
-    AppLogger.info(_tag, 'clockInByOfflineCode(session=$sessionId, code=$code)');
+    AppLogger.info(
+        _tag, 'clockInByOfflineCode(session=$sessionId, code=$code)');
 
     if (status == AttendanceStatus.absent) {
-      AppLogger.warn(_tag, 'clockInByOfflineCode → rejected: absent status via code');
+      AppLogger.warn(
+          _tag, 'clockInByOfflineCode → rejected: absent status via code');
       throw Exception(
-          "This status cannot be used with the offline code.");
+        "The absent status cannot be used with the offline code.",
+      );
     }
 
     final member = await _memberService.getMemberByOfflineCode(code);
     if (member == null) {
-      AppLogger.warn(_tag, 'clockInByOfflineCode → member not found for code $code');
-      throw Exception('The code entered does not match any member. Please check and try again.');
+      AppLogger.warn(
+          _tag, 'clockInByOfflineCode → member not found for code $code');
+      throw Exception(
+        'Member not found. The code entered does not match any member.',
+      );
     }
 
-    AppLogger.info(_tag, 'clockInByOfflineCode → resolved member: "${member.fullName}"');
+    AppLogger.info(
+        _tag, 'clockInByOfflineCode → resolved member: "${member.fullName}"');
     final clockIn = await clockInMember(
       sessionId: sessionId,
       memberId: member.id,
       status: status,
       method: ClockInMethod.offlineCode,
+      positionLabel: positionLabel,
     );
     _notifyClockIn(member.fullName, sessionId);
     return clockIn;
@@ -242,13 +336,11 @@ class AttendanceService {
           .toSet();
 
       // Members already in the clock_ins table (any status)
-      final anyMarkedIds =
-          existingClockIns.map((c) => c.memberId).toSet();
+      final anyMarkedIds = existingClockIns.map((c) => c.memberId).toSet();
 
       // Determine team scope for Sunday sessions
-      final expectedTeam = isSundayProgram
-          ? _inferSundayServiceTeam(sessionName)
-          : null;
+      final expectedTeam =
+          isSundayProgram ? _inferSundayServiceTeam(sessionName) : null;
 
       AppLogger.debug(
         _tag,
@@ -265,7 +357,8 @@ class AttendanceService {
 
       // Build absent records for everyone not yet in the table
       final toInsert = expectedMembers
-          .where((m) => !markedIds.contains(m.id) && !anyMarkedIds.contains(m.id))
+          .where(
+              (m) => !markedIds.contains(m.id) && !anyMarkedIds.contains(m.id))
           .map((m) => {
                 'session_id': sessionId,
                 'member_id': m.id,
@@ -276,15 +369,18 @@ class AttendanceService {
           .toList();
 
       if (toInsert.isEmpty) {
-        AppLogger.info(_tag, 'finalizeSessionAbsences → nothing to insert (all accounted for)');
+        AppLogger.info(_tag,
+            'finalizeSessionAbsences → nothing to insert (all accounted for)');
         return;
       }
 
-      AppLogger.info(_tag, 'finalizeSessionAbsences → inserting ${toInsert.length} absent records');
+      AppLogger.info(_tag,
+          'finalizeSessionAbsences → inserting ${toInsert.length} absent records');
       await _client.from(_table).insert(toInsert);
       AppLogger.info(_tag, 'finalizeSessionAbsences → done');
     } catch (e, stack) {
-      AppLogger.error(_tag, 'finalizeSessionAbsences($sessionId) failed', e, stack);
+      AppLogger.error(
+          _tag, 'finalizeSessionAbsences($sessionId) failed', e, stack);
       rethrow;
     }
   }
@@ -300,7 +396,8 @@ class AttendanceService {
       final sessionIds = await _getSundaySessionIds(sinceDate: sinceDate);
 
       if (sessionIds.isEmpty) {
-        AppLogger.info(_tag, 'getAbsentMembersSince → no Sunday sessions found since $sinceDate');
+        AppLogger.info(_tag,
+            'getAbsentMembersSince → no Sunday sessions found since $sinceDate');
         return [];
       }
 
@@ -314,15 +411,16 @@ class AttendanceService {
           .select('member_id')
           .inFilter('session_id', sessionIds)
           .inFilter('status', ['present', 'excused']);
-      final accountedMemberIds = (clockInsData as List)
-          .map((c) => c['member_id'] as String)
-          .toSet();
+      final accountedMemberIds =
+          (clockInsData as List).map((c) => c['member_id'] as String).toSet();
 
       // Members with no present/excused record in those sessions
       final absent = allMembers
-          .where((m) => m.team != Team.none && !accountedMemberIds.contains(m.id))
+          .where(
+              (m) => m.team != Team.none && !accountedMemberIds.contains(m.id))
           .toList();
-      AppLogger.info(_tag, 'getAbsentMembersSince → ${absent.length} unaccounted members');
+      AppLogger.info(
+          _tag, 'getAbsentMembersSince → ${absent.length} unaccounted members');
       return absent;
     } catch (e, s) {
       AppLogger.error(_tag, 'getAbsentMembersSince($sinceDate) failed', e, s);
@@ -340,10 +438,11 @@ class AttendanceService {
         return [];
       }
 
-      final latestActions =
-          await _getLatestFollowUpActions(absentMembers.map((m) => m.id).toList());
+      final latestActions = await _getLatestFollowUpActions(
+          absentMembers.map((m) => m.id).toList());
       if (latestActions.isEmpty) {
-        AppLogger.info(_tag, 'getActiveAbsentMembersSince → no follow-up actions yet');
+        AppLogger.info(
+            _tag, 'getActiveAbsentMembersSince → no follow-up actions yet');
         return absentMembers;
       }
 
@@ -353,16 +452,29 @@ class AttendanceService {
         sundaySessionIds: sundaySessionIds,
       );
 
+      final now = DateTime.now().toUtc();
       final active = absentMembers.where((member) {
         final latestAction = latestActions[member.id];
         if (latestAction == null) return true;
 
         final latestAttendance = accountedAfterAction[member.id];
-        if (latestAttendance == null) {
+        if (latestAttendance != null &&
+            latestAttendance.isAfter(latestAction.createdAt)) {
+          return true;
+        }
+
+        if (latestAction.actionType == 'returned' ||
+            latestAction.actionType == 'transferred_out') {
           return false;
         }
 
-        return latestAttendance.isAfter(latestAction.createdAt);
+        final nextFollowUp = latestAction.scheduledFollowUpAt;
+        if (nextFollowUp != null) {
+          return !nextFollowUp.toUtc().isAfter(now);
+        }
+
+        return now.difference(latestAction.createdAt.toUtc()) >=
+            _followUpCooldown;
       }).toList();
 
       AppLogger.info(
@@ -371,7 +483,8 @@ class AttendanceService {
       );
       return active;
     } catch (e, s) {
-      AppLogger.error(_tag, 'getActiveAbsentMembersSince($sinceDate) failed', e, s);
+      AppLogger.error(
+          _tag, 'getActiveAbsentMembersSince($sinceDate) failed', e, s);
       rethrow;
     }
   }
@@ -427,8 +540,7 @@ class AttendanceService {
           _tag, 'getClockInsByMember($memberId) → ${list.length} records');
       return list;
     } catch (e, stack) {
-      AppLogger.error(
-          _tag, 'getClockInsByMember($memberId) failed', e, stack);
+      AppLogger.error(_tag, 'getClockInsByMember($memberId) failed', e, stack);
       rethrow;
     }
   }
@@ -440,7 +552,8 @@ class AttendanceService {
       await _client.from(_table).delete().eq('session_id', sessionId);
       AppLogger.info(_tag, 'clearSessionClockIns($sessionId) → ok');
     } catch (e, stack) {
-      AppLogger.error(_tag, 'clearSessionClockIns($sessionId) failed', e, stack);
+      AppLogger.error(
+          _tag, 'clearSessionClockIns($sessionId) failed', e, stack);
       rethrow;
     }
   }
@@ -458,12 +571,11 @@ class AttendanceService {
   }
 
   Future<List<String>> _getSundaySessionIds({String? sinceDate}) async {
-    final query = _client
-        .from('sessions')
-        .select('id')
-        .or('name.ilike.%Service 1%,name.ilike.%Service 2%,name.ilike.%Service 3%');
+    final query = _client.from('sessions').select('id').or(
+        'name.ilike.%Service 1%,name.ilike.%Service 2%,name.ilike.%Service 3%');
 
-    final data = sinceDate == null ? await query : await query.gte('date', sinceDate);
+    final data =
+        sinceDate == null ? await query : await query.gte('date', sinceDate);
     return (data as List).map((s) => s['id'] as String).toList();
   }
 
@@ -499,8 +611,8 @@ class AttendanceService {
         .select('member_id, clocked_at')
         .inFilter('member_id', memberIds)
         .inFilter('session_id', sundaySessionIds)
-        .inFilter('status', ['present', 'excused'])
-        .order('clocked_at', ascending: false);
+        .inFilter('status', ['present', 'excused']).order('clocked_at',
+            ascending: false);
 
     final latest = <String, DateTime>{};
     for (final row in data as List) {
@@ -523,6 +635,7 @@ class AttendanceService {
     required String code,
     required OfflineSyncService offlineService,
     AttendanceStatus status = AttendanceStatus.present,
+    String? positionLabel,
   }) async {
     AppLogger.info(
       _tag,
@@ -538,7 +651,9 @@ class AttendanceService {
       try {
         final member = await _memberService.getMemberByOfflineCode(code);
         if (member == null) {
-          throw Exception('The code entered does not match any member. Please check and try again.');
+          throw Exception(
+            'Member not found. The code entered does not match any member.',
+          );
         }
 
         final now = DateTime.now();
@@ -550,6 +665,7 @@ class AttendanceService {
           status: status,
           method: ClockInMethod.offlineCode,
           clockedAt: now,
+          positionLabel: positionLabel,
         );
 
         // Return a pending clock-in record locally
@@ -561,6 +677,7 @@ class AttendanceService {
           status: status,
           method: ClockInMethod.offlineCode,
           clockedAt: now,
+          positionLabel: _normalizePositionLabel(positionLabel),
         );
       } catch (e) {
         AppLogger.error(_tag, 'Offline save failed: $e', e, null);
@@ -573,7 +690,13 @@ class AttendanceService {
       sessionId: sessionId,
       code: code,
       status: status,
+      positionLabel: positionLabel,
     );
+  }
+
+  String? _normalizePositionLabel(String? value) {
+    final label = value?.trim().toUpperCase();
+    return label == null || label.isEmpty ? null : label;
   }
 
   /// Fire-and-forget: broadcasts a clock-in push notification to all staff.
@@ -601,4 +724,3 @@ class AttendanceService {
     }
   }
 }
-

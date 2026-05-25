@@ -9,7 +9,8 @@ import '../core/logger.dart';
 import 'offline_sync_service.dart';
 import 'attendance_service.dart';
 
-final offlineClockInSyncServiceProvider = Provider<OfflineClockInSyncService>((ref) {
+final offlineClockInSyncServiceProvider =
+    Provider<OfflineClockInSyncService>((ref) {
   return OfflineClockInSyncService(
     ref.watch(offlineSyncServiceProvider),
     ref.watch(attendanceServiceProvider),
@@ -36,7 +37,8 @@ class OfflineClockInSyncService {
         return 0;
       }
 
-      AppLogger.info(_tag, 'Starting sync of ${pending.length} pending clock-ins');
+      AppLogger.info(
+          _tag, 'Starting sync of ${pending.length} pending clock-ins');
 
       int syncedCount = 0;
       for (final record in pending) {
@@ -46,6 +48,7 @@ class OfflineClockInSyncService {
           final statusStr = record['status'] as String;
           final methodStr = record['method'] as String;
           final clockInId = record['id'] as String;
+          final positionLabel = record['position_label'] as String?;
 
           final status = AttendanceStatus.values.firstWhere(
             (e) => e.value == statusStr,
@@ -62,6 +65,7 @@ class OfflineClockInSyncService {
             memberId: memberId,
             status: status,
             method: method,
+            positionLabel: positionLabel,
           );
 
           // Mark as synced
@@ -81,7 +85,8 @@ class OfflineClockInSyncService {
         }
       }
 
-      AppLogger.info(_tag, 'Sync completed: $syncedCount/${ pending.length} records synced');
+      AppLogger.info(_tag,
+          'Sync completed: $syncedCount/${pending.length} records synced');
       return syncedCount;
     } catch (e, stack) {
       AppLogger.error(_tag, 'syncPendingClockIns failed', e, stack);

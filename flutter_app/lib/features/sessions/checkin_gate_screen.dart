@@ -13,6 +13,7 @@ import '../../services/member_service.dart';
 import '../../services/session_service.dart';
 import '../../app_theme/app_theme.dart';
 import '../../core/utils/date_utils.dart';
+import '../attendance/position_assignment_dialog.dart';
 
 // ── Providers ─────────────────────────────────────────────────────────────────
 
@@ -37,8 +38,7 @@ class CheckinGateScreen extends ConsumerStatefulWidget {
   final String sessionId;
 
   @override
-  ConsumerState<CheckinGateScreen> createState() =>
-      _CheckinGateScreenState();
+  ConsumerState<CheckinGateScreen> createState() => _CheckinGateScreenState();
 }
 
 class _CheckinGateScreenState extends ConsumerState<CheckinGateScreen> {
@@ -74,21 +74,19 @@ class _CheckinGateScreenState extends ConsumerState<CheckinGateScreen> {
     // Re-check gate state immediately before processing.
     // The visual gate auto-refreshes every 30 s, but the user could scan
     // in the final seconds before close.
-    final testMode =
-        ref.read(_testModeProvider).valueOrNull ?? false;
+    final testMode = ref.read(_testModeProvider).valueOrNull ?? false;
     if (!testMode) {
-      final session = ref
-          .read(_sessionDetailProvider(widget.sessionId))
-          .valueOrNull;
+      final session =
+          ref.read(_sessionDetailProvider(widget.sessionId)).valueOrNull;
       if (session != null && session.startTime != null) {
-        final gate = sessionGateState(
-            session.startTime, session.endTime, nowInLagos());
+        final gate =
+            sessionGateState(session.startTime, session.endTime, nowInLagos());
         if (gate == SessionGateState.closed) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text(
-                    'Session is closed. Check-in is no longer available.'),
+                content:
+                    Text('Session is closed. Check-in is no longer available.'),
                 backgroundColor: AppTheme.error,
               ),
             );
@@ -100,17 +98,30 @@ class _CheckinGateScreenState extends ConsumerState<CheckinGateScreen> {
 
     setState(() => _processing = true);
     try {
-      final clockIn =
-          await ref.read(attendanceServiceProvider).clockInByOfflineCode(
-            sessionId: widget.sessionId,
-            code: code,
-            status: AttendanceStatus.present,
-          );
       final member =
           await ref.read(memberServiceProvider).getMemberByOfflineCode(code);
       if (member == null) {
         throw Exception('Member not found');
       }
+
+      final options = await ref
+          .read(attendanceServiceProvider)
+          .getPositionOptionsForSession(widget.sessionId);
+      if (!mounted) return;
+      final positionLabel = await showPositionAssignmentDialog(
+        context: context,
+        memberName: member.fullName,
+        options: options,
+      );
+      if (!mounted) return;
+
+      final clockIn =
+          await ref.read(attendanceServiceProvider).clockInByOfflineCode(
+                sessionId: widget.sessionId,
+                code: code,
+                status: AttendanceStatus.present,
+                positionLabel: positionLabel,
+              );
 
       if (!mounted) return;
       await context.push(
@@ -119,6 +130,7 @@ class _CheckinGateScreenState extends ConsumerState<CheckinGateScreen> {
           'member': member,
           'entryTime': clockIn.clockedAt,
           'status': clockIn.status,
+          'positionLabel': clockIn.positionLabel,
         },
       );
 
@@ -128,8 +140,7 @@ class _CheckinGateScreenState extends ConsumerState<CheckinGateScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content:
-                Text(e.toString().replaceFirst('Exception: ', '')),
+            content: Text(e.toString().replaceFirst('Exception: ', '')),
             backgroundColor: AppTheme.error,
           ),
         );
@@ -197,14 +208,12 @@ class _CheckinGateScreenState extends ConsumerState<CheckinGateScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new,
-              color: Colors.white),
+          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
           onPressed: () => context.go('/sessions'),
         ),
         title: const Text(
           'Guest Check-in',
-          style: TextStyle(
-              color: Colors.white, fontWeight: FontWeight.w700),
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
         ),
         actions: [
           IconButton(
@@ -236,9 +245,7 @@ class _CheckinGateScreenState extends ConsumerState<CheckinGateScreen> {
           // ── Darkened overlay with hole ─────────────────────────────────
           Column(
             children: [
-              Expanded(
-                  flex: 3,
-                  child: Container(color: Colors.black54)),
+              Expanded(flex: 3, child: Container(color: Colors.black54)),
               Row(
                 children: [
                   Expanded(child: Container(color: Colors.black54)),
@@ -250,9 +257,7 @@ class _CheckinGateScreenState extends ConsumerState<CheckinGateScreen> {
                   Expanded(child: Container(color: Colors.black54)),
                 ],
               ),
-              Expanded(
-                  flex: 4,
-                  child: Container(color: Colors.black54)),
+              Expanded(flex: 4, child: Container(color: Colors.black54)),
             ],
           ),
 
@@ -263,8 +268,8 @@ class _CheckinGateScreenState extends ConsumerState<CheckinGateScreen> {
             right: 0,
             child: Center(
               child: Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 16, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
                   color: Colors.black54,
                   borderRadius: BorderRadius.circular(24),
@@ -282,11 +287,8 @@ class _CheckinGateScreenState extends ConsumerState<CheckinGateScreen> {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      _processing
-                          ? 'Processing...'
-                          : 'Scanning for QR Code...',
-                      style: const TextStyle(
-                          color: Colors.white, fontSize: 14),
+                      _processing ? 'Processing...' : 'Scanning for QR Code...',
+                      style: const TextStyle(color: Colors.white, fontSize: 14),
                     ),
                   ],
                 ),
@@ -332,8 +334,8 @@ class _CheckinGateScreenState extends ConsumerState<CheckinGateScreen> {
             left: 24,
             right: 24,
             child: ElevatedButton.icon(
-              onPressed: () => context
-                  .push('/sessions/${widget.sessionId}/code'),
+              onPressed: () =>
+                  context.push('/sessions/${widget.sessionId}/code'),
               icon: const Icon(Icons.keyboard, size: 18),
               label: const Text('Enter Code Manually'),
               style: ElevatedButton.styleFrom(
@@ -527,15 +529,11 @@ class _FramePainter extends CustomPainter {
     canvas.drawLine(Offset.zero, const Offset(c, 0), paint);
     canvas.drawLine(Offset.zero, const Offset(0, c), paint);
     // Top-right
-    canvas.drawLine(
-        Offset(size.width, 0), Offset(size.width - c, 0), paint);
-    canvas.drawLine(
-        Offset(size.width, 0), Offset(size.width, c), paint);
+    canvas.drawLine(Offset(size.width, 0), Offset(size.width - c, 0), paint);
+    canvas.drawLine(Offset(size.width, 0), Offset(size.width, c), paint);
     // Bottom-left
-    canvas.drawLine(
-        Offset(0, size.height), Offset(c, size.height), paint);
-    canvas.drawLine(Offset(0, size.height),
-        Offset(0, size.height - c), paint);
+    canvas.drawLine(Offset(0, size.height), Offset(c, size.height), paint);
+    canvas.drawLine(Offset(0, size.height), Offset(0, size.height - c), paint);
     // Bottom-right
     canvas.drawLine(Offset(size.width, size.height),
         Offset(size.width - c, size.height), paint);
@@ -558,9 +556,7 @@ class _FramePainter extends CustomPainter {
 
 class _CameraIconButton extends StatelessWidget {
   const _CameraIconButton(
-      {required this.icon,
-      required this.label,
-      required this.onTap});
+      {required this.icon, required this.label, required this.onTap});
   final IconData icon;
   final String label;
   final VoidCallback onTap;

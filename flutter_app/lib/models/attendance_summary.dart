@@ -15,6 +15,7 @@ class AttendanceSummary {
     required this.absentCount,
     required this.excusedCount,
     required this.totalMarked,
+    required this.positionedCount,
   });
 
   final String sessionId;
@@ -27,6 +28,7 @@ class AttendanceSummary {
   final int absentCount;
   final int excusedCount;
   final int totalMarked;
+  final int positionedCount;
 
   factory AttendanceSummary.fromJson(Map<String, dynamic> json) {
     return AttendanceSummary(
@@ -34,10 +36,13 @@ class AttendanceSummary {
       sessionName: json['session_name'] as String,
       sessionDate: json['session_date'] as String,
       programId: json['program_id'] as String,
-      programTitle: json['program_title'] as String,      newGuestCount: (json['new_guest_count'] as num?)?.toInt() ?? 0,      presentCount: (json['present_count'] as num?)?.toInt() ?? 0,
+      programTitle: json['program_title'] as String,
+      newGuestCount: (json['new_guest_count'] as num?)?.toInt() ?? 0,
+      presentCount: (json['present_count'] as num?)?.toInt() ?? 0,
       absentCount: (json['absent_count'] as num?)?.toInt() ?? 0,
       excusedCount: (json['excused_count'] as num?)?.toInt() ?? 0,
       totalMarked: (json['total_marked'] as num?)?.toInt() ?? 0,
+      positionedCount: (json['positioned_count'] as num?)?.toInt() ?? 0,
     );
   }
 }

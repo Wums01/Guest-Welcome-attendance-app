@@ -52,16 +52,14 @@ final _clockInsProvider =
   return ref.read(attendanceServiceProvider).getClockInsBySession(sessionId);
 });
 
-final _clockInsWithMembersProvider =
-    FutureProvider.autoDispose.family<List<_ClockInEntry>, String>(
-        (ref, sessionId) async {
+final _clockInsWithMembersProvider = FutureProvider.autoDispose
+    .family<List<_ClockInEntry>, String>((ref, sessionId) async {
   final clockIns =
       await ref.read(attendanceServiceProvider).getClockInsBySession(sessionId);
   final members = await ref.read(memberServiceProvider).getMembers();
   final memberMap = {for (final m in members) m.id: m};
   return clockIns
-      .map((c) =>
-          _ClockInEntry(clockIn: c, member: memberMap[c.memberId]))
+      .map((c) => _ClockInEntry(clockIn: c, member: memberMap[c.memberId]))
       .toList();
 });
 
@@ -83,8 +81,7 @@ class SessionDetailScreen extends ConsumerStatefulWidget {
       _SessionDetailScreenState();
 }
 
-class _SessionDetailScreenState
-    extends ConsumerState<SessionDetailScreen> {
+class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
   // 'all' | 'present' | 'absent' | 'excused'
   String _statusFilter = 'all';
   bool _finalizing = false;
@@ -105,21 +102,17 @@ class _SessionDetailScreenState
     super.dispose();
   }
 
-  Future<void> _finalizeAbsences(
-      Session session, Program? program) async {
+  Future<void> _finalizeAbsences(Session session, Program? program) async {
     setState(() => _finalizing = true);
     try {
-      await ref
-          .read(attendanceServiceProvider)
-          .finalizeSessionAbsences(
+      await ref.read(attendanceServiceProvider).finalizeSessionAbsences(
             sessionId: widget.sessionId,
             sessionName: session.name,
             isSundayProgram: program?.programType == ProgramType.sunday ||
                 _looksLikeSundayService(session.name),
           );
       ref.invalidate(_clockInsProvider(widget.sessionId));
-      ref.invalidate(
-          _clockInsWithMembersProvider(widget.sessionId));
+      ref.invalidate(_clockInsWithMembersProvider(widget.sessionId));
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -157,8 +150,7 @@ class _SessionDetailScreenState
 
   /// Upgrades an absent member to excused after staff confirmation.
   /// Only callable on absent clock-ins (terminal status guard is in the service).
-  Future<void> _markAsExcused(
-      BuildContext context, _ClockInEntry entry) async {
+  Future<void> _markAsExcused(BuildContext context, _ClockInEntry entry) async {
     final memberName = entry.member?.fullName ?? entry.clockIn.memberId;
     final messenger = ScaffoldMessenger.of(context);
     final confirm = await showDialog<bool>(
@@ -174,8 +166,7 @@ class _SessionDetailScreenState
           ),
           FilledButton(
             style: FilledButton.styleFrom(
-                backgroundColor: AppTheme.amber,
-                foregroundColor: Colors.white),
+                backgroundColor: AppTheme.amber, foregroundColor: Colors.white),
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text('Mark Excused'),
           ),
@@ -215,8 +206,8 @@ class _SessionDetailScreenState
 
   /// Prompts the user to update the "new guests" count for this session.
   Future<void> _editNewGuestCount(BuildContext context, Session session) async {
-    final controller = TextEditingController(
-        text: session.newGuestCount.toString());
+    final controller =
+        TextEditingController(text: session.newGuestCount.toString());
     final messenger = ScaffoldMessenger.of(context);
 
     final confirmed = await showDialog<bool>(
@@ -293,7 +284,7 @@ class _SessionDetailScreenState
     final now = nowInLagos();
     final todayISO = formatDateISO(now);
     final isToday = session.date == todayISO;
-    
+
     if (!isToday) {
       // Past or future session - disable button
       return const Tooltip(
@@ -306,7 +297,7 @@ class _SessionDetailScreenState
     }
 
     final gate = sessionGateState(session.startTime, session.endTime, now);
-    
+
     switch (gate) {
       case SessionGateState.open:
       case SessionGateState.noGate:
@@ -429,8 +420,7 @@ class _SessionDetailScreenState
 
   @override
   Widget build(BuildContext context) {
-    final sessionAsync =
-        ref.watch(_sessionDetailProvider(widget.sessionId));
+    final sessionAsync = ref.watch(_sessionDetailProvider(widget.sessionId));
     final entriesAsync =
         ref.watch(_clockInsWithMembersProvider(widget.sessionId));
 
@@ -438,16 +428,13 @@ class _SessionDetailScreenState
       loading: () => Scaffold(
         backgroundColor: AppTheme.background,
         appBar: AppBar(
-            leading: BackButton(
-                onPressed: () => context.go('/sessions'))),
-        body:
-            const Center(child: CircularProgressIndicator()),
+            leading: BackButton(onPressed: () => context.go('/sessions'))),
+        body: const Center(child: CircularProgressIndicator()),
       ),
       error: (e, _) => Scaffold(
         backgroundColor: AppTheme.background,
         appBar: AppBar(
-            leading: BackButton(
-                onPressed: () => context.go('/sessions'))),
+            leading: BackButton(onPressed: () => context.go('/sessions'))),
         body: Center(child: Text('Error: $e')),
       ),
       data: (session) {
@@ -455,8 +442,7 @@ class _SessionDetailScreenState
           return Scaffold(
             backgroundColor: AppTheme.background,
             appBar: AppBar(
-                leading: BackButton(
-                    onPressed: () => context.go('/sessions'))),
+                leading: BackButton(onPressed: () => context.go('/sessions'))),
             body: Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -539,13 +525,11 @@ class _SessionDetailScreenState
           children: [
             Text(
               session.name,
-              style: const TextStyle(
-                  fontSize: 16, fontWeight: FontWeight.w700),
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
             ),
             Text(
               session.date,
-              style: const TextStyle(
-                  fontSize: 12, color: AppTheme.slate500),
+              style: const TextStyle(fontSize: 12, color: AppTheme.slate500),
             ),
           ],
         ),
@@ -628,29 +612,25 @@ class _SessionDetailScreenState
                   _StatusFilterChip(
                     label: 'All',
                     selected: _statusFilter == 'all',
-                    onTap: () =>
-                        setState(() => _statusFilter = 'all'),
+                    onTap: () => setState(() => _statusFilter = 'all'),
                   ),
                   const SizedBox(width: 8),
                   _StatusFilterChip(
                     label: 'Present',
                     selected: _statusFilter == 'present',
-                    onTap: () =>
-                        setState(() => _statusFilter = 'present'),
+                    onTap: () => setState(() => _statusFilter = 'present'),
                   ),
                   const SizedBox(width: 8),
                   _StatusFilterChip(
                     label: 'Absent',
                     selected: _statusFilter == 'absent',
-                    onTap: () =>
-                        setState(() => _statusFilter = 'absent'),
+                    onTap: () => setState(() => _statusFilter = 'absent'),
                   ),
                   const SizedBox(width: 8),
                   _StatusFilterChip(
                     label: 'Excused',
                     selected: _statusFilter == 'excused',
-                    onTap: () =>
-                        setState(() => _statusFilter = 'excused'),
+                    onTap: () => setState(() => _statusFilter = 'excused'),
                   ),
                 ],
               ),
@@ -672,8 +652,7 @@ class _SessionDetailScreenState
                     ),
                   ),
                   const Spacer(),
-                  const Icon(Icons.sort,
-                      size: 18, color: AppTheme.slate500),
+                  const Icon(Icons.sort, size: 18, color: AppTheme.slate500),
                 ],
               ),
             ),
@@ -691,8 +670,7 @@ class _SessionDetailScreenState
                           ),
                         )
                       : ListView.separated(
-                          padding: const EdgeInsets.fromLTRB(
-                              16, 0, 16, 8),
+                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                           itemCount: filtered.length,
                           separatorBuilder: (_, __) =>
                               const SizedBox(height: 8),
@@ -709,65 +687,84 @@ class _SessionDetailScreenState
                                   ? () => _markAsExcused(ctx, entry)
                                   : null,
                               child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 12),
-                              decoration: BoxDecoration(
-                                color: AppTheme.surface,
-                                borderRadius:
-                                    BorderRadius.circular(12),
-                                border: Border.all(
-                                    color: AppTheme.slate200),
-                              ),
-                              child: Row(
-                                children: [
-                                  MemberAvatar(
-                                    fullName:
-                                        member?.fullName ?? '?',
-                                    imageUrl: member?.photoUrl,
-                                    radius: 20,
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          member?.fullName ??
-                                              clockIn.memberId,
-                                          style: const TextStyle(
-                                            fontWeight:
-                                                FontWeight.w700,
-                                            fontSize: 14,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        if (member != null)
-                                          TeamBadge(
-                                              team: member.team),
-                                        if (isAbsent) ...[
-                                          const SizedBox(height: 4),
-                                          const Text(
-                                            'Hold to excuse',
-                                            style: TextStyle(
-                                              fontSize: 10,
-                                              color: AppTheme.amber,
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 12),
+                                decoration: BoxDecoration(
+                                  color: AppTheme.surface,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: AppTheme.slate200),
+                                ),
+                                child: Row(
+                                  children: [
+                                    MemberAvatar(
+                                      fullName: member?.fullName ?? '?',
+                                      imageUrl: member?.photoUrl,
+                                      radius: 20,
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            member?.fullName ??
+                                                clockIn.memberId,
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.w700,
+                                              fontSize: 14,
                                             ),
                                           ),
+                                          const SizedBox(height: 4),
+                                          if (member != null)
+                                            TeamBadge(team: member.team),
+                                          if (clockIn.positionLabel != null &&
+                                              clockIn.positionLabel!
+                                                  .isNotEmpty) ...[
+                                            const SizedBox(height: 4),
+                                            Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                const Icon(
+                                                  Icons.place_outlined,
+                                                  size: 12,
+                                                  color: AppTheme.primary,
+                                                ),
+                                                const SizedBox(width: 4),
+                                                Text(
+                                                  'Position ${clockIn.positionLabel}',
+                                                  style: const TextStyle(
+                                                    fontSize: 11,
+                                                    fontWeight: FontWeight.w700,
+                                                    color: AppTheme.primary,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ],
+                                          if (isAbsent) ...[
+                                            const SizedBox(height: 4),
+                                            const Text(
+                                              'Hold to excuse',
+                                              style: TextStyle(
+                                                fontSize: 10,
+                                                color: AppTheme.amber,
+                                              ),
+                                            ),
+                                          ],
                                         ],
-                                      ],
+                                      ),
                                     ),
-                                  ),
-                                  StatusBadge(
-                                    status: clockIn.status,
-                                    clockedAt: clockIn.status ==
-                                            AttendanceStatus.present
-                                        ? timeStr
-                                        : null,
-                                  ),
-                                ],
+                                    StatusBadge(
+                                      status: clockIn.status,
+                                      clockedAt: clockIn.status ==
+                                              AttendanceStatus.present
+                                          ? timeStr
+                                          : null,
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
                             );
                           },
                         ),
@@ -778,8 +775,7 @@ class _SessionDetailScreenState
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
               decoration: const BoxDecoration(
                 color: AppTheme.surface,
-                border: Border(
-                    top: BorderSide(color: AppTheme.slate200)),
+                border: Border(top: BorderSide(color: AppTheme.slate200)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -821,8 +817,7 @@ class _SessionDetailScreenState
                               height: 18,
                               width: 18,
                               child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white),
+                                  strokeWidth: 2, color: Colors.white),
                             )
                           : const Text('Finalize Absences'),
                     ),
@@ -907,8 +902,7 @@ class _StatusFilterChip extends StatelessWidget {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
-        padding:
-            const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
         decoration: BoxDecoration(
           color: selected ? AppTheme.primary : Colors.white,
           borderRadius: BorderRadius.circular(20),

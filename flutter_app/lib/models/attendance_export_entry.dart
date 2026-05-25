@@ -7,6 +7,7 @@ class AttendanceExportEntry {
     required this.memberName,
     required this.status,
     required this.clockedAt,
+    this.positionLabel,
   });
 
   final String sessionId;
@@ -14,6 +15,7 @@ class AttendanceExportEntry {
   final String memberName;
   final AttendanceStatus status;
   final DateTime clockedAt;
+  final String? positionLabel;
 
   factory AttendanceExportEntry.fromJson(Map<String, dynamic> json) {
     final member = json['members'] as Map<String, dynamic>?;
@@ -25,6 +27,7 @@ class AttendanceExportEntry {
       memberName: (member?['full_name'] as String?) ?? 'Unknown Member',
       status: AttendanceStatus.fromValue(json['status'] as String),
       clockedAt: DateTime.parse(json['clocked_at'] as String),
+      positionLabel: json['position_label'] as String?,
     );
   }
 }
